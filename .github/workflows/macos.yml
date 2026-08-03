@@ -20,6 +20,6 @@ jobs:
         run: npm install
 
       - name: Build macOS arm64
-        run: npx electron-builder --mac --arm64 --publish always
+        run: npx electron-builder --mac --arm64 --x64 --publish always
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}

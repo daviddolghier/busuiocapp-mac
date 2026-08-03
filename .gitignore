@@ -5,7 +5,7 @@ dist/
 .idea/
 package-x64.json
 package-ia32.json
-package.json
+package-mac.json
 package-mac-intel.json
 dist-test.ps1
 git.ps1

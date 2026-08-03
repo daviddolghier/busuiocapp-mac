@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+    <meta charset="UTF-8">
+    <title>Busuioc App | Welcome</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        /* Variabilele tale din :root */
+        :root {
+            --accent-gradient: linear-gradient(135deg, #7c3aed 0%, #db2777 100%);
+            --accent-glow: 0 8px 24px rgba(124, 58, 237, 0.22);
+            --radius-lg: 12px;
+            --muted: #a1a1aa;
+            --text: #f4f4f5;
+        }
+
+        /* Reset & Layout */
+        html, body {
+            height: 100%;
+            margin: 0;
+            position: relative;
+            background-color: #0f0f12; /* Fundal dark modern pentru a pune în evidență glow-ul */
+            color: #ffffff;
+            transition: opacity 2s ease-in-out;
+            opacity: 1;
+            font-family: system-ui, -apple-system, sans-serif;
+        }
+
+        body.page-fade-out {
+            opacity: 0;
+        }
+
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-sizing: border-box;
+        }
+
+        /* Containerul principal */
+        .welcome-div {
+            display: flex;
+            align-items: center;
+            gap: 0px;
+        }
+
+        .welcome-div img {
+            max-width: 350px;
+            height: auto;
+        }
+
+        .welcome-text h1 {
+            font-size: 80px;
+            font-family: var(--font-busuioc, sans-serif);
+            margin: 0 0 8px 0;
+        }
+
+        /* --- STILIZARE CONTAINER DE ÎNCĂRCARE (LOADING STYLED WITH YOUR BRAND) --- */
+        .loading-container {
+            position: fixed;
+            bottom: 180px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 14px;
+            width: 320px;
+            transition: opacity 0.5s ease;
+        }
+
+        /* Bara de fundal */
+        .update-progress {
+            width: 100%;
+            height: 20px;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        /* Bara care se umple cu gradientul și glow-ul tău */
+        .update-progress span {
+            display: block;
+            height: 100%;
+            width: 0%;
+            background: var(--accent-gradient);
+            box-shadow: var(--accent-glow);
+            border-radius: var(--radius-lg);
+            transition: width 0.1s linear;
+        }
+
+        /* Procentajul cu text stilizat din accent-gradient */
+        #updatePercent {
+            font-size: 18px;
+            font-weight: 700;
+            background: var(--accent-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: 0.5px;
+        }
+
+        /* --- STILIZARE NAV LINK / START BTN DUPĂ CODUL TĂU --- */
+        .nav__link {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.45rem;
+            padding: 0.8rem 2rem; /* Puțin ajustat pentru dimensiunea butonului de acțiune */
+            border-radius: 40px;
+            color: var(--muted);
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 2rem;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            cursor: pointer;
+        }
+
+        .nav__link:hover {
+            color: var(--text);
+            background: rgba(255, 255, 255, 0.06);
+        }
+
+        .nav__link.is-active {
+            color: #fff;
+            background: var(--accent-gradient);
+            box-shadow: var(--accent-glow);
+        }
+
+        /* Poziționare fixă + Efecte extra de hover la activare */
+        .start-btn {
+            position: fixed;
+            bottom: 180px;
+            left: 50%;
+            transform: translateX(-50%);
+
+            /* Ascuns la început */
+            display: none;
+            opacity: 0;
+        }
+
+        .start-btn.show {
+            display: inline-flex;
+            animation: fadeIn 0.8s forwards;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateX(-50%) translateY(10px); }
+            to { opacity: 1; transform: translateX(-50%) translateY(0); }
+        }
+
+        /* Hover mai dinamic peste starea is-active */
+        .start-btn.is-active:hover {
+            transform: translateX(-50%) translateY(-4px) scale(1.03);
+            box-shadow: 0 12px 32px rgba(124, 58, 237, 0.45);
+        }
+
+        .start-btn.is-active:active {
+            transform: translateX(-50%) translateY(-1px) scale(0.98);
+        }
+
+    </style>
+</head>
+<body>
+
+<div class="welcome-div">
+    <img src="images/logo.png" alt="Busuioc App Logo">
+
+    <div class="welcome-text">
+        <h1>Busuioc App</h1>
+    </div>
+</div>
+
+<div id="loadingBox" class="loading-container">
+    <div class="update-progress">
+        <span id="progressBar"></span>
+    </div>
+    <span id="updatePercent">0%</span>
+</div>
+
+<a id="startBtn" class="nav__link is-active start-btn">Începe povestea</a>
+
+<script>
+
+    document.addEventListener("DOMContentLoaded", () => {
+        const progressBar = document.getElementById("progressBar");
+        const updatePercent = document.getElementById("updatePercent");
+        const loadingBox = document.getElementById("loadingBox");
+        const startBtn = document.getElementById("startBtn");
+
+        const totalDuration = 8000; // 8 secunde
+        const intervalTime = 50;
+        let elapsedTime = 0;
+
+        // 1. ANIMAȚIE LOADING (8 SECUNDE)
+        const timer = setInterval(() => {
+            elapsedTime += intervalTime;
+            let percent = Math.min(Math.round((elapsedTime / totalDuration) * 100), 100);
+
+            progressBar.style.width = `${percent}%`;
+            updatePercent.textContent = `${percent}%`;
+
+            if (percent >= 100) {
+                clearInterval(timer);
+
+                setTimeout(() => {
+                    loadingBox.style.opacity = "0";
+                    setTimeout(() => {
+                        loadingBox.style.display = "none";
+                        startBtn.classList.add("show");
+                    }, 500);
+                }, 300);
+            }
+        }, intervalTime);
+
+        // În welcome.html
+        startBtn.addEventListener("click", (e) => {
+            e.preventDefault();
+
+            // 1. Salvăm că aplicația a fost vizitată
+            localStorage.setItem("visited", "true");
+
+            // 2. Facem animația de fade out
+            document.body.classList.add("page-fade-out");
+
+            // 3. Redirecționăm către index.html după 2 secunde
+            setTimeout(() => {
+                window.location.href = "index.html";
+            }, 2000);
+        });
+    });
+</script>
+
+</body>
+</html>

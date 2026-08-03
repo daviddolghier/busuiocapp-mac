@@ -1,0 +1,25 @@
+name: Build macOS
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-latest
+
+    steps:
+      - name: Descarcă proiectul
+        uses: actions/checkout@v4
+
+      - name: Instalează Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Instalează dependențe
+        run: npm install
+
+      - name: Build macOS arm64
+        run: npx electron-builder --mac arm64 --publish always
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}

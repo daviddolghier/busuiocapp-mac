@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="ro">
+  <head>
+    <script>
+      if (!localStorage.getItem("visited")) {
+        window.location.href = "welcome.html";
+      }
+    </script>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Busuioc App | Home</title>
+    <meta
+      name="description"
+      content="Un journey map emoționant, personalizabil și elegant pentru Adriana și Stefan."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body class="page-shell">
+    <div class="ambient ambient--one"></div>
+    <div class="ambient ambient--two"></div>
+
+    <header class="topbar">
+      <a class="brand" href="index.html" aria-label="Acasă">
+        <span class="brand__mark"><img src="images/logo.png" alt="Logo Adriana și Stefan" /></span>
+        <span class="brand__text">
+          <strong>Busuioc App</strong>
+        </span>
+      </a>
+
+      <nav class="nav">
+        <a href="#" id="theme-toggle" class="chip" role="button" aria-label="Comută tema">
+          <i class="bi bi-moon-stars" id="theme-icon"></i>
+        </a>
+        <a href="index.html" class="nav__link is-active"><i class="bi bi-house-heart-fill"></i> Home</a>
+        <a href="galerie.html" class="nav__link"><i class="bi bi-camera-fill"></i> Galerie</a>
+        <a href="aniversari.html" class="nav__link"><i class="bi bi-calendar2-week"></i> Aniversări</a>
+        <a href="harta.html" class="nav__link"><i class="bi bi-map"></i> Hartă</a>
+        <a href="myplan.html" class="nav__link"><i class="bi bi-check2-square"></i> MyPlan</a>
+        <a class="nav__link" href="settings.html" aria-label="Setări"><i class="bi bi-gear"></i> Setări</a>
+      </nav>
+
+    </header>
+
+    <main>
+      <section class="hero" id="home">
+        <div class="hero__backdrop"></div>
+        <div class="hero__content" data-reveal>
+          <h1>
+            Busuioc App
+          </h1>
+          <p class="hero__lead">
+            Amintirile voastre de la căsătorie, congrese, excursii și toate
+            momentele importante de mai departe.
+            Creează-ți propria galerie de amintiri!
+          </p>
+
+          <div class="hero__actions">
+            <a class="btn btn--primary" href="galerie.html"><i class="bi bi-camera-fill"></i> Vezi galeria</a>
+            <a class="btn btn--ghost" href="aniversari.html"><i class="bi bi-calendar2-week"></i> Aniversări</a>
+          </div>
+        </div>
+      </section>
+
+      <section class="section section--tight" id="countdown" data-reveal>
+        <div class="section__header">
+          <div>
+            <p class="eyebrow">Cronometru</p>
+            <h2 id="counterHeading">Felicitări! Sunteți căsătoriți de:</h2>
+          </div>
+          <div class="section__tools">
+            <button class="chip chip--soft" id="notifyBtn" type="button">
+              Activează notificările
+            </button>
+          </div>
+        </div>
+
+        <div class="counter" id="counter" aria-live="polite">
+          <div class="counter__item">
+            <span class="counter__value" id="counterYears">0</span>
+            <span class="counter__label">Ani</span>
+          </div>
+          <div class="counter__item">
+            <span class="counter__value" id="counterDays">0</span>
+            <span class="counter__label">Zile</span>
+          </div>
+          <div class="counter__item">
+            <span class="counter__value" id="counterHours">0</span>
+            <span class="counter__label">Ore</span>
+          </div>
+          <div class="counter__item">
+            <span class="counter__value" id="counterMinutes">0</span>
+            <span class="counter__label">Minute</span>
+          </div>
+          <div class="counter__item">
+            <span class="counter__value" id="counterSeconds">0</span>
+            <span class="counter__label">Secunde</span>
+          </div>
+        </div>
+
+        <p class="counter__note" id="counterNote"></p>
+      </section>
+
+      <section class="section" data-reveal>
+        <div class="section__header">
+          <div>
+            <p class="eyebrow">Amintiri</p>
+            <h2>Momente aleatorii din galerie</h2>
+          </div>
+          <a class="chip chip--soft" href="galerie.html"><i class="bi bi-camera-fill"></i> Vezi Galeria Întreagă</a>
+        </div>
+
+        <div class="preview-grid" id="previewGallery"></div>
+      </section>
+
+      <section class="section" id="harta" data-reveal>
+        <div class="section__header">
+          <div>
+            <p class="eyebrow">Hartă</p>
+            <h2>România și Moldova prin locurile voastre</h2>
+          </div>
+        </div>
+
+        <div class="map-panel">
+          <div class="map-panel__header">
+            <span>Poți edita pozele de aici</span>
+          </div>
+          <div class="map-stage" id="mapStage"></div>
+        </div>
+      </section>
+
+      <section class="section" data-reveal>
+        <div class="section__header">
+          <div>
+            <p class="eyebrow">Aniversări</p>
+            <h2>Etapele voastre importante</h2>
+          </div>
+          <a class="chip chip--soft" href="aniversari.html"><i class="bi bi-calendar2-week"></i> Deschide timeline-ul</a>
+        </div>
+
+        <div class="timeline-preview" id="timelinePreview"></div>
+      </section>
+
+      <section class="section section--feedback" data-reveal >
+        <div class="feedback-card">
+          <div>
+            <p class="eyebrow">Idei</p>
+            <h2>Ce vrei să mai adăugi la această aplicație?</h2>
+            <p class="muted">
+              Scrie orice vrei să apară mai departe: culori, secțiuni,
+              amintiri, texte sau animații.
+              <br><br>
+              Dacă întâmpinați erori sau bug-uri, la fel scrieți aici.
+            </p>
+          </div>
+
+          <form id="feedbackForm" class="feedback-form">
+  <label id="feedback">
+    <span>Mesaj</span>
+    <textarea
+      name="message"
+      rows="6"
+      placeholder="Lasă aici ideea ta..."
+      required
+    ></textarea>
+  </label>
+
+  <button class="btn btn--primary" type="submit">
+    <i class="bi bi-send-arrow-down"></i>
+    Send feedback
+  </button>
+</form>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <p>Busuioc App Version 1.0.13</p>
+    </footer>
+
+    <div class="toast" id="toast" aria-live="polite" aria-atomic="true"></div>
+
+    <script src="data.js"></script>
+    <script src="app.js"></script>
+
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+
+<script>
+emailjs.init({
+    publicKey: "5IrxZoG8P2TxvgKrH"
+});
+</script>
+
+<script>
+const form = document.getElementById("feedbackForm");
+
+form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const button = form.querySelector("button");
+    button.disabled = true;
+    button.innerHTML = "Sending...";
+
+    try {
+        await emailjs.sendForm(
+            "busuiocfamily",
+            "template_busuioc_family",
+            form
+        );
+
+        alert("Feedback trimis cu succes!");
+        form.reset();
+    } catch (err) {
+        console.error(err);
+        alert("Eroare la trimiterea feedback-ului.");
+    }
+
+    button.disabled = false;
+    button.innerHTML =
+        '<i class="bi bi-send-arrow-down"></i> Send feedback';
+});
+</script>
+    <script src="theme.js"></script>
+    <script src="update.js"></script>
+</body>
+</html>

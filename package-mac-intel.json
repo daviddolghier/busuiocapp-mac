@@ -1,0 +1,55 @@
+{
+  "name": "Busuioc-App",
+  "version": "1.0.13",
+  "description": "Busuioc App desktop application",
+  "author": "David",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder"
+  },
+
+  "build": {
+    "appId": "com.busuioc.app",
+    "productName": "Busuioc App",
+    "afterPack": "./removeLocales.js",
+
+    "directories": {
+      "output": "dist"
+    },
+
+    "publish": {
+      "provider": "github",
+      "owner": "daviddolghier",
+      "repo": "busuiocapp-mac-intel",
+      "releaseType": "draft"
+    },
+
+    "files": [
+      "**/*",
+      "!dist/**"
+    ],
+
+    "mac": {
+      "category": "public.app-category.utilities",
+      "artifactName": "BusuiocApp-${arch}.${ext}",
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    }
+  },
+
+  "devDependencies": {
+    "electron": "^43.2.0",
+    "electron-builder": "^26.15.3"
+  },
+
+  "dependencies": {
+    "electron-updater": "^6.8.9"
+  }
+}

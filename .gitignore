@@ -3,3 +3,12 @@ dist/
 *.log
 .DS_Store
 .idea
+start-ia32.ps1
+start.ps1
+git.ps1
+dist-test.ps1
+package-ia32.json
+package-mac-intel.json
+package-mac.json
+package-x64.json
+desktop.ini

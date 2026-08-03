@@ -11,3 +11,4 @@ dist-test.ps1
 git.ps1
 start-ia32.ps1
 start.ps1
+remove-gitfiles.ps1

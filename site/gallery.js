@@ -1074,7 +1074,6 @@ function openSlideshow(startIndex = 0) {
     showToast("Nu există fotografii de afișat în Modul Cinematic!");
     return;
   }
-
   state.slideshowItems = pool;
   state.slideshowIndex = Math.max(0, Math.min(startIndex, pool.length - 1));
   state.isSlideshowActive = true;

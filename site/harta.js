@@ -18,6 +18,25 @@ function thumbnail(item) {
     : `<img src="${item.src}" alt="">`;
 }
 
+function sidebarPhotos(items) {
+  return items.slice(0, 3).map((item) => `<button class="location-list__photo" type="button" data-preview-src="${encodeURIComponent(item.src)}" data-preview-kind="${item.kind || "image"}" aria-label="Previzualizează amintirea">${thumbnail(item)}</button>`).join("");
+}
+
+function showPreview(source, kind) {
+  let dialog = document.getElementById("mapPreviewDialog");
+  if (!dialog) {
+    dialog = document.createElement("dialog");
+    dialog.id = "mapPreviewDialog";
+    dialog.className = "map-preview-dialog";
+    dialog.innerHTML = `<div class="map-preview-dialog__surface"><button type="button" class="map-preview-dialog__close" aria-label="Închide"><i class="bi bi-x-lg"></i></button><div class="map-preview-dialog__media"></div></div>`;
+    document.body.appendChild(dialog);
+    dialog.querySelector(".map-preview-dialog__close").onclick = () => dialog.close();
+    dialog.addEventListener("click", (event) => { if (event.target === dialog) dialog.close(); });
+  }
+  dialog.querySelector(".map-preview-dialog__media").innerHTML = kind === "video" ? `<video src="${source}" controls autoplay></video>` : `<img src="${source}" alt="Previzualizare amintire">`;
+  dialog.showModal();
+}
+
 async function coordinatesFor(location) {
   const local = Object.entries(knownLocations).find(([name]) => normalized(name) === normalized(location));
   if (local) return local[1];
@@ -57,12 +76,14 @@ function addPlace(name, items, coords) {
 
   allBounds.push(coords);
   document.getElementById("locationList").insertAdjacentHTML("beforeend", `
-    <button class="location-list__item" data-place="${encodeURIComponent(name)}">
+    <article class="location-list__entry"><button class="location-list__item" data-place="${encodeURIComponent(name)}">
       <span><i class="bi bi-geo-alt-fill"></i></span><div><strong>${name}</strong><small>${items.length} amintiri</small></div><i class="bi bi-chevron-right"></i>
-    </button>`);
-  document.querySelector(`[data-place="${encodeURIComponent(name)}"]`).addEventListener("click", () => {
+    </button><div class="location-list__photos">${sidebarPhotos(items)}</div></article>`);
+  const entry = document.querySelector(`[data-place="${encodeURIComponent(name)}"]`).closest(".location-list__entry");
+  entry.querySelector(".location-list__item").addEventListener("click", () => {
     map.flyTo(coords, 12); marker.openPopup();
   });
+  entry.querySelectorAll("[data-preview-src]").forEach((button) => button.addEventListener("click", () => showPreview(decodeURIComponent(button.dataset.previewSrc), button.dataset.previewKind)));
 }
 
 async function initMap() {

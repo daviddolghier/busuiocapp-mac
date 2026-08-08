@@ -1,6 +1,6 @@
 {
   "name": "Busuioc-App",
-  "version": "1.0.13",
+  "version": "1.0.14",
   "description": "Busuioc App desktop application",
   "author": "David",
   "main": "main.js",
@@ -8,7 +8,6 @@
     "start": "electron .",
     "build": "electron-builder"
   },
-
   "build": {
     "appId": "com.busuioc.app",
     "productName": "Busuioc App",
@@ -21,7 +20,7 @@
     "publish": {
       "provider": "github",
       "owner": "daviddolghier",
-      "repo": "busuiocapp-mac",
+      "repo": "busuiocapp",
       "releaseType": "draft"
     },
 
@@ -30,6 +29,19 @@
       "!dist/**"
     ],
 
+    "win": {
+      "icon": "installer/logo.ico",
+      "artifactName": "BusuiocApp-${arch}.${ext}",
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+
     "mac": {
       "category": "public.app-category.utilities",
       "artifactName": "BusuiocApp-${arch}.${ext}",
@@ -37,11 +49,23 @@
         {
           "target": "dmg",
           "arch": [
-            "arm64",
-            "x64"
+            "x64",
+            "arm64"
           ]
         }
       ]
+    },
+
+    "nsis": {
+      "oneClick": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Busuioc App",
+      "runAfterFinish": true,
+      "perMachine": true,
+      "include": "installer/customHeader.nsh",
+      "installerIcon": "installer/logo.ico",
+      "uninstallerIcon": "installer/logo.ico"
     }
   },
 

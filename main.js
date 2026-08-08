@@ -6,6 +6,12 @@ const { autoUpdater } = require("electron-updater");
 
 let win;
 let updater;
+const DEFAULT_SHORTCUTS = { fullscreen: "F11", home: "F1", gallery: "F2", anniversaries: "F3", map: "F4", myplan: "F5", appearance: "F12", add: "Alt+A", easterEgg: "Alt+F1" };
+let shortcuts = { ...DEFAULT_SHORTCUTS };
+const shortcutsPath = () => path.join(app.getPath("userData"), "shortcuts.json");
+async function loadShortcuts() { try { shortcuts = { ...DEFAULT_SHORTCUTS, ...JSON.parse(await fs.readFile(shortcutsPath(), "utf8")) }; } catch { /* Default set. */ } }
+function triggerShortcut(command) { if (command === "fullscreen") return win?.setFullScreen(!win.isFullScreen()); if (command === "easterEgg") return setTimeout(() => { throw new Error("Busuioc easter egg crash"); }, 50); win?.webContents.send("shortcut:command", command); }
+function registerShortcuts() { globalShortcut.unregisterAll(); for (const [command, accelerator] of Object.entries(shortcuts)) globalShortcut.register(accelerator, () => triggerShortcut(command)); }
 
 app.setAppUserModelId("com.busuioc.app");
 
@@ -54,6 +60,80 @@ function libraryPaths() {
 function planPaths() {
     const root = path.join(app.getPath("userData"), "my-plans");
     return { root, attachments: path.join(root, "attachments"), data: path.join(root, "plans.json") };
+}
+
+function recipePaths() {
+    const root = path.join(app.getPath("userData"), "recipes");
+    return { root, images: path.join(root, "images") };
+}
+
+function storagePaths() {
+    const root = path.join(app.getPath("userData"), "my-storage");
+    return { root, files: path.join(root, "files"), metadata: path.join(root, "files.json") };
+}
+
+async function ensureStorage() {
+    const paths = storagePaths();
+    await fs.mkdir(paths.files, { recursive: true });
+    try { await fs.access(paths.metadata); } catch { await fs.writeFile(paths.metadata, "[]", "utf8"); }
+    return paths;
+}
+
+const textExtensions = new Set(["txt", "md", "js", "css", "html", "htm", "json", "xml", "csv", "log", "yml", "yaml"]);
+const fileExtension = (name) => path.extname(name).slice(1).toLowerCase();
+
+async function listStorageFiles() {
+    const paths = await ensureStorage();
+    const files = JSON.parse(await fs.readFile(paths.metadata, "utf8"));
+    return files.map((file) => ({ ...file, src: pathToFileURL(path.join(paths.files, file.storedName)).href, editable: textExtensions.has(file.extension) }));
+}
+
+async function importStorageFiles() {
+    const picked = await dialog.showOpenDialog(win, { title: "Importă fișiere în MyStorage", properties: ["openFile", "multiSelections"] });
+    if (picked.canceled || !picked.filePaths.length) return { canceled: true, files: [] };
+    const paths = await ensureStorage();
+    const metadata = JSON.parse(await fs.readFile(paths.metadata, "utf8"));
+    const imported = [];
+    for (const source of picked.filePaths) {
+        const name = path.basename(source), extension = fileExtension(name), storedName = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}-${name.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
+        const stat = await fs.stat(source);
+        const file = { id: `storage_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`, name, storedName, extension, size: stat.size, importedAt: new Date().toISOString() };
+        await fs.copyFile(source, path.join(paths.files, storedName)); metadata.unshift(file); imported.push({ ...file, src: pathToFileURL(path.join(paths.files, storedName)).href, editable: textExtensions.has(extension) });
+    }
+    await fs.writeFile(paths.metadata, JSON.stringify(metadata, null, 2), "utf8");
+    return { canceled: false, files: imported };
+}
+
+async function readStorageFile(_event, id) {
+    const paths = await ensureStorage(), files = JSON.parse(await fs.readFile(paths.metadata, "utf8")), file = files.find((item) => item.id === id);
+    if (!file) throw new Error("Fișierul nu a fost găsit.");
+    if (!textExtensions.has(file.extension)) return { ...file, src: pathToFileURL(path.join(paths.files, file.storedName)).href, editable: false };
+    return { ...file, editable: true, content: await fs.readFile(path.join(paths.files, file.storedName), "utf8") };
+}
+
+async function saveStorageText(_event, { id, content }) {
+    const paths = await ensureStorage(), files = JSON.parse(await fs.readFile(paths.metadata, "utf8")), file = files.find((item) => item.id === id);
+    if (!file || !textExtensions.has(file.extension)) throw new Error("Acest fișier nu poate fi editat.");
+    await fs.writeFile(path.join(paths.files, file.storedName), String(content || ""), "utf8");
+    return true;
+}
+
+async function removeStorageFile(_event, id) {
+    const paths = await ensureStorage(), files = JSON.parse(await fs.readFile(paths.metadata, "utf8")), file = files.find((item) => item.id === id);
+    if (!file) return true;
+    await fs.rm(path.join(paths.files, file.storedName), { force: true });
+    await fs.writeFile(paths.metadata, JSON.stringify(files.filter((item) => item.id !== id), null, 2), "utf8"); return true;
+}
+
+async function uninstallStorage() { const paths = storagePaths(); await fs.rm(paths.root, { recursive: true, force: true }); return true; }
+
+async function backupStorage() {
+    const paths = await ensureStorage(), files = JSON.parse(await fs.readFile(paths.metadata, "utf8"));
+    const target = await dialog.showSaveDialog(win, { title: "Backup MyStorage", defaultPath: `MyStorage-backup-${new Date().toISOString().slice(0, 10)}.zip`, filters: [{ name: "Arhivă ZIP", extensions: ["zip"] }] });
+    if (target.canceled || !target.filePath) return { canceled: true };
+    const entries = [{ name: "files.json", data: JSON.stringify(files, null, 2) }];
+    for (const file of files) entries.push({ name: `files/${file.storedName}`, data: await fs.readFile(path.join(paths.files, file.storedName)) });
+    await fs.writeFile(target.filePath, makeZip(entries)); return { canceled: false };
 }
 
 const starterPlans = [{
@@ -116,6 +196,22 @@ async function importPlanAttachment() {
     const safe = original.replace(/[^a-zA-Z0-9._-]/g, "_");
     const stored = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}-${safe}`;
     const target = path.join(paths.attachments, stored);
+    await fs.copyFile(selected.filePaths[0], target);
+    return { canceled: false, name: original, src: pathToFileURL(target).href };
+}
+
+async function importRecipeImage() {
+    const selected = await dialog.showOpenDialog(win, {
+        title: "Alege imaginea rețetei",
+        properties: ["openFile"],
+        filters: [{ name: "Imagini", extensions: ["jpg", "jpeg", "png", "webp", "gif"] }],
+    });
+    if (selected.canceled || !selected.filePaths[0]) return { canceled: true };
+    const paths = recipePaths();
+    await fs.mkdir(paths.images, { recursive: true });
+    const original = path.basename(selected.filePaths[0]);
+    const safe = original.replace(/[^a-zA-Z0-9._-]/g, "_");
+    const target = path.join(paths.images, `${Date.now()}-${Math.random().toString(36).slice(2, 8)}-${safe}`);
     await fs.copyFile(selected.filePaths[0], target);
     return { canceled: false, name: original, src: pathToFileURL(target).href };
 }
@@ -301,6 +397,11 @@ app.whenReady().then(async () => {
     ipcMain.handle("plans:list", readPlans);
     ipcMain.handle("plans:save", async (_event, plans) => savePlans(plans));
     ipcMain.handle("plans:import-attachment", importPlanAttachment);
+    ipcMain.handle("recipes:import-image", importRecipeImage);
+    ipcMain.handle("notifications:show", (_event, payload = {}) => {
+        if (Notification.isSupported()) new Notification({ title: String(payload.title || "Busuioc App"), body: String(payload.body || "Notificare de test"), icon: path.join(__dirname, "site", "images", "logo.png") }).show();
+        return true;
+    });
     ipcMain.handle("updater:download", async () => {
         await autoUpdater.downloadUpdate();
         return true;
@@ -313,10 +414,10 @@ function createWindow() {
     Menu.setApplicationMenu(null);
 
     win = new BrowserWindow({
-        width: 1200,
-        height: 800,
-        minWidth: 1100,
-        minHeight: 700,
+        width: 1300,
+        height: 850,
+        minWidth: 1300,
+        minHeight: 850,
         title: "Busuioc App",
 
         webPreferences: {

@@ -11,7 +11,7 @@ jobs:
       - name: Descarcă proiectul
         uses: actions/checkout@v4
 
-      - name: Instalează Node
+      - name: Instalează Node 22
         uses: actions/setup-node@v4
         with:
           node-version: 22

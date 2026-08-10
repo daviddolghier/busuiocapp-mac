@@ -1,6 +1,6 @@
 (() => {
   const MODES = ["light", "dark", "auto"];
-  const PALETTES = ["violet", "red", "white", "pink"];
+  const PALETTES = ["violet", "blue", "red", "pink", "white", "turquoise", "yellow"];
   const media = window.matchMedia("(prefers-color-scheme: dark)");
   function mode() { return localStorage.getItem("appearance") || localStorage.getItem("theme") || "auto"; }
   function palette() { return localStorage.getItem("palette") || "violet"; }

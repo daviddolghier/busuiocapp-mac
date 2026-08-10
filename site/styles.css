@@ -74,9 +74,12 @@
 /* Paleta și aspectul sunt independente: fiecare paletă funcționează în light/dark. */
 [data-theme="dark"] { --bg:#10111a; --bg-gradient:radial-gradient(circle at 50% 0%,#25213c 0%,#10111a 70%); --surface:rgba(25,27,43,.9); --surface-strong:rgba(37,40,61,.98); --surface-border:rgba(255,255,255,.1); --text:#f5f3ff; --muted:#a9abc2; --line:rgba(255,255,255,.12); --shadow:0 20px 40px rgba(0,0,0,.42); --shadow-soft:0 8px 20px rgba(0,0,0,.26); }
 [data-palette="violet"] { --accent:#7c3aed; --accent-light:#8b5cf6; --accent-deep:#5b21b6; --rose:#db2777; --accent-gradient:linear-gradient(135deg,#7c3aed,#db2777); }
+[data-palette="blue"] { --accent:#2563eb; --accent-light:#3b82f6; --accent-deep:#1d4ed8; --rose:#06b6d4; --accent-gradient:linear-gradient(135deg,#2563eb,#06b6d4); }
 [data-palette="red"] { --accent:#dc2626; --accent-light:#ef4444; --accent-deep:#991b1b; --rose:#f97316; --accent-gradient:linear-gradient(135deg,#dc2626,#f97316); }
-[data-palette="white"] { --accent:#475569; --accent-light:#64748b; --accent-deep:#1e293b; --rose:#64748b; --accent-gradient:linear-gradient(135deg,#334155,#94a3b8); }
 [data-palette="pink"] { --accent:#db2777; --accent-light:#ec4899; --accent-deep:#9d174d; --rose:#a855f7; --accent-gradient:linear-gradient(135deg,#db2777,#a855f7); }
+[data-palette="white"] { --accent:#475569; --accent-light:#64748b; --accent-deep:#1e293b; --rose:#64748b; --accent-gradient:linear-gradient(135deg,#334155,#94a3b8); }
+[data-palette="turquoise"] { --accent:#0d9488; --accent-light:#14b8a6; --accent-deep:#0f766e; --rose:#06b6d4; --accent-gradient:linear-gradient(135deg,#0d9488,#06b6d4); }
+[data-palette="yellow"] { --accent:#d97706; --accent-light:#f59e0b; --accent-deep:#b45309; --rose:#f97316; --accent-gradient:linear-gradient(135deg,#d97706,#f97316); }
 
 .gallery-folder { box-shadow: var(--shadow-soft); }
 .gallery-folder__header { background: var(--surface-strong); border: 1px solid var(--surface-border); border-radius: var(--radius-lg); overflow: hidden; }

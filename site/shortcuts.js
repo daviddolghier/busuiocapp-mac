@@ -6,7 +6,8 @@
     anniversary: { key: "F3", label: "Aniversări", desc: "Deschide pagina de aniversări" },
     map: { key: "F4", label: "Hartă", desc: "Deschide harta amintirilor" },
     myplan: { key: "F5", label: "MyPlan", desc: "Deschide planurile voastre" },
-    toggleTheme: { key: "F12", label: "Comută Aspect (Tema)", desc: "Comută între modul întunecat și deschis" },
+    toggleTheme: { key: "F10", label: "Comută tema de culoare", desc: "Comută între temele de culoare" },
+    toggleAppearance: { key: "F12", label: "Comută aspectul", desc: "Comută între modul întunecat și deschis" },
     arrowsNav: { key: "Arrows", label: "Navigare cu Săgețile + Enter", desc: "Selectare elemente pe pagină cu săgețile, Enter deschide/apasă" },
     addContent: { key: "Alt+N", label: "Adaugă conținut nou", desc: "Deschide modalul de adăugare poze / plan / rețetă" },
     easterEgg: { key: "Alt+F1", label: "Force Random Crash", desc: "Forțează un crash cu o eroare amuzantă" },
@@ -26,6 +27,8 @@
           merged[id].key = custom[id].key;
         }
       });
+      // F12 era scurtătura implicită veche pentru teme; acum rămâne pentru aspect.
+      if (merged.toggleTheme.key === "F12") merged.toggleTheme.key = DEFAULT_SHORTCUTS.toggleTheme.key;
       return merged;
     } catch {
       return structuredClone(DEFAULT_SHORTCUTS);
@@ -152,6 +155,13 @@
     const combo = getEventCombo(e);
     const shortcuts = getShortcuts();
 
+    // În aplicația desktop, Alt+F4 închide fereastra curentă.
+    if (combo === shortcuts.closeApp.key || (e.altKey && e.key === "F4")) {
+      e.preventDefault();
+      window.close();
+      return;
+    }
+
     // Check Easter Egg (Alt+F1)
     if (combo === shortcuts.easterEgg.key || (e.altKey && e.key === "F1")) {
       e.preventDefault();
@@ -171,7 +181,7 @@
       return;
     }
 
-    if (isEditingInput && !["F11", "F1", "F2", "F3", "F4", "F5", "F12"].includes(e.key)) {
+    if (isEditingInput && !["F11", "F10", "F12", "F1", "F2", "F3", "F4", "F5"].includes(e.key)) {
       return;
     }
 
@@ -193,8 +203,20 @@
     if (combo === shortcuts.map.key || e.key === "F4") { e.preventDefault(); location.href = "harta.html"; return; }
     if (combo === shortcuts.myplan.key || e.key === "F5") { e.preventDefault(); location.href = "myplan.html"; return; }
 
-    // Toggle Theme (F12)
-    if (combo === shortcuts.toggleTheme.key || e.key === "F12") {
+    // Toggle colour palette (F10)
+    if (combo === shortcuts.toggleTheme.key || e.key === "F10") {
+      e.preventDefault();
+      if (window.ThemeManager) {
+        const palettes = ["violet", "blue", "red", "pink", "white", "turquoise", "yellow"];
+        const current = window.ThemeManager.getPalette();
+        const next = palettes[(palettes.indexOf(current) + 1) % palettes.length];
+        window.ThemeManager.setPalette(next);
+      }
+      return;
+    }
+
+    // Toggle appearance (F12)
+    if (combo === shortcuts.toggleAppearance.key || e.key === "F12") {
       e.preventDefault();
       if (window.ThemeManager) {
         const current = window.ThemeManager.getTheme();

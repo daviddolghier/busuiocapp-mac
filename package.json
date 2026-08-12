@@ -1,6 +1,6 @@
 {
   "name": "Busuioc-App",
-  "version": "1.0.15",
+  "version": "1.0.16",
   "description": "Busuioc App desktop application",
   "author": "David",
   "main": "main.js",
@@ -46,7 +46,7 @@
   },
 
   "devDependencies": {
-    "electron": "^43.2.0",
+    "electron": "43.2.0",
     "electron-builder": "^26.15.3"
   },
 

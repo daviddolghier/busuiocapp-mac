@@ -406,6 +406,14 @@ app.whenReady().then(async () => {
         await autoUpdater.downloadUpdate();
         return true;
     });
+    ipcMain.handle("cache:get-size", async () => win?.webContents.session.getCacheSize() || 0);
+    ipcMain.handle("cache:clear", async () => {
+        const session = win?.webContents.session;
+        if (!session) return 0;
+        const size = await session.getCacheSize();
+        await session.clearCache();
+        return size;
+    });
     createWindow();
     initUpdater();
 });

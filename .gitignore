@@ -6,9 +6,11 @@ dist/
 package-x64.json
 package-ia32.json
 package-mac.json
-package-mac-intel.json
+package-lock.json
+mac-copy.ps1
 dist-test.ps1
 git.ps1
 start.ps1
 remove-gitfiles.ps1
 desktop.ini
+fix-electron-builder-lock.js

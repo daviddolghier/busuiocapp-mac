@@ -12,12 +12,13 @@
       time: "35 min",
       steps: `1. Curăță cartofii și taie-i în bețișoare uniforme de circa 1 cm grosime — cât mai egale, ca să se prăjească uniform.
 2. Clătește bine cartofii tăiați cu apă rece, apoi usucă-i complet cu un prosop de bucătărie. Uscarea este esențială — apa în contact cu uleiul încins provoacă stropi și înmoaie cartofii în loc să-i rumenească.
-3. Încinge uleiul în tigaie (sau friteuză) la 175–180 °C. Verifică temperatura lăsând să cadă un cub mic de pâine — ar trebui să se rumenească în circa 30 de secunde.
+3. Încinge uleiul în tigaie când deja e fierbinte. 
 4. Adaugă cartofii în loturi mici, ca să nu scadă brusc temperatura uleiului. Nu supraîncărca tigaia.
 5. Prăjește 5–7 minute, amestecând rar, până devin aurii și crocanți la exterior și moi la interior.
 6. Scoate-i cu o spumieră și lasă-i pe hârtie absorbantă 1–2 minute.
 7. Condimentează imediat cu sare, piper, boia și usturoi praf. Săratul după prăjire (nu înainte) menține crustă crocantă.
 8. Presară pătrunjel proaspăt tocat și servește de îndată — cartofii prăjiți sunt la ei acasă abia scoși din tigaie.
+9. Savurea-ză și cu sosuri diferite! 
 
 💡 Sfat: Pentru cartofi extra-crocanți, fierbe-i 5 minute înainte de prăjire, lasă-i să se răcească și abia apoi pune-i în ulei.`
     },
@@ -124,13 +125,17 @@
       title: "Pelimeni",
       category: "main",
       ingredients: "făină, ouă, apă caldă, sare (pentru aluat) | carne tocată (porc și vită amestec), ceapă, usturoi, sare, piper negru, puțin lapte sau apă rece (pentru umplutură) | unt, smântână, marar (pentru servire)",
-      time: "90 min",
-      steps: `1. Pregătește aluatul: Amestecă 3 ouă cu 1 linguriță sare și 150 ml apă caldă. Adaugă treptat 500–550 g de făină și frământă 10 minute până obții un aluat elastic și neted, care nu se lipește de mâini. Înfășoară în folie alimentară și lasă-l să se odihnească 30 minute la temperatura camerei.
-2. Pregătește umplutura: Amestecă 500 g carne tocată (ideal jumătate porc, jumătate vită) cu 1 ceapă rasă fin, 2 căței de usturoi zdrobiți, sare și mult piper negru. Adaugă 3–4 linguri lapte sau apă rece și amestecă energic — umplutura trebuie să fie suculentă, nu uscată.
-3. Întinde aluatul pe o suprafață înfăinată, subțire (circa 2 mm). Taie cercuri cu un pahar de circa 6–7 cm diametru.
-4. Pune o linguriță de umplutură în centrul fiecărui cerc. Pliază în semilună și lipește bine marginile, apoi unește cele două capete dând forma clasică de pelimeni.
-5. Fierbe pelimenii în apă cu sare: când apa fierbe, adaugă pelimenii și amestecă ușor. Fierb în 5–7 minute de la momentul în care se ridică la suprafață.
-6. Scoate cu o spumieră și servește imediat cu un cub de unt deasupra, smântână și marar tocat.
+      time: "15 min",
+      steps: `1. Du-te la brodețchi
+2. Cumpără pelimeni
+3. Fierbe vreo 10-15 minute
+4. Pune multă smăntână (Poți pune si unt)
+5. Punele intro farfurie
+6. Cand vă așezați să vă turnați la fiecare
+7. După asta să vedeți dacă nu e fierbinte
+8. Daca e perfect caldă începeți să mâncați
+9. Stați puțin mai întâi rugăciune și deja mâncați.
+10. Ați mâncat? Bun amu spală vasele- ok mă opresc aici.
 
 💡 Pelimenii se pot congela înainte de a fi fierți — aşează-i pe un platou și bagă la congelator, apoi mută-i în pungă. Fierb direct din congelat, adăugând 2–3 minute în plus.`
     },
@@ -150,23 +155,6 @@
 8. La final, presară verdețuri proaspete din abundență — pătrunjelul și leușteanul sunt obligatorii. Un strop de oțet sau suc de lămâie la servire deschide aromele perfect.
 
 💡 Zeama de casă este vindecătoare — cu cât fierbe mai lent, cu atât e mai bogată în colagen și arome.`
-    },
-    {
-      id: "zeama-de-peste",
-      title: "Zeamă de pește",
-      category: "main",
-      ingredients: "pește (crap, biban, șalău sau un mix — cu cap și oase pentru gust mai bun), cartofi, morcov, ceapă, roșii, ardei gras, usturoi, ulei de floarea-soarelui, sare, piper boabe, dafin, cimbru, boia de ardei, oțet de mere sau vin alb, verdețuri proaspete (pătrunjel, mădăr)",
-      time: "60 min",
-      steps: `1. Dacă folosești pește întreg, curăță-l, eviscerează-l și taie-l în bucăți mari. Capul și coada dau cel mai mult gust — nu le arunca.
-2. Pune la fiert 2 litri de apă cu sare. Adaugă capul și coada de pește împreună cu boabele de piper, dafinul și cimbrul. Fierbe 20 minute la foc mic, scoțând spuma la nevoie.
-3. Filtrează zeama de oase — acum ai un fond aromat de pește.
-4. Într-o oală separată, căleşte în ulei ceapa tăiată mărunt, morcovul în rondele și ardeiul gras tocat. Adaugă usturoiul și boiaua de ardei și mai căleşte 1 minut.
-5. Toarnă fondul de pește în oală. Adaugă roșiile tocate (sau roșii în conservă) și cartofii tăiați cubulețe. Fierbe 15–20 minute la foc mediu.
-6. Adaugă bucățile de pește (fără cap și coadă) și fierbe la foc mic 10–12 minute — nu mai mult, că peștele se face tare.
-7. La final, adaugă un strop de oțet de mere sau vin alb pentru acrișor și verdețuri proaspete tocate.
-8. Servește fierbinte cu pâine de casă sau mămăligă.
-
-💡 Zeama de pește este delicată — nu supraferbe peștele și nu amesteca prea des, că se dezintegrează.`
     },
     {
       id: "omleta-mega",
@@ -203,6 +191,20 @@
 💡 Secretul shakshukei: sosul trebuie să fie suficient de consistent înainte să adaugi ouăle — dacă e prea lichid, albușul se împrăștie și nu se gătește corect.`
     }
   ];
+  const RECIPE_IMAGES = {
+    "cartofi-prajiti": "images/food/cartofi-prajiti.jpg",
+    "placinte-branza": "images/food/placinte-cu-branza.jpg",
+    "paste-bolognese": "images/food/spaghetti-bolognese.jpg",
+    "paste-napoli": "images/food/napolitana.jpg",
+    "paste-carbonara": "images/food/spaghetti-carbonara.jpg",
+    "pancakes-americane": "images/food/pancake-americane.jpg",
+    "clatite-simple": "images/food/clatite.jpg",
+    "pelimeni": "images/food/pelimeni.jpg",
+    "zeama-de-pui": "images/food/zeama-de-pui.jpg",
+    "omleta-mega": "images/food/omleta-mega.jpg",
+    shakshuka: "images/food/shakshuka.jpg",
+    tzatziki: "images/food/tzatziki.jpg",
+  };
 
   DEFAULT_RECIPES.push(
     {
@@ -261,7 +263,9 @@
   }
   function closeEditor() { els.dialog.close(); }
   try { recipes = JSON.parse(localStorage.getItem(STORAGE_KEY)) || structuredClone(DEFAULT_RECIPES); } catch { recipes = structuredClone(DEFAULT_RECIPES); }
-  if (!localStorage.getItem(STORAGE_KEY)) save();
+  // Actualizează doar imaginile rețetelor incluse, fără a le modifica detaliile.
+  recipes = recipes.map(recipe => RECIPE_IMAGES[recipe.id] ? { ...recipe, image: RECIPE_IMAGES[recipe.id] } : recipe);
+  save();
   document.querySelectorAll(".recipe-tab").forEach(button => button.addEventListener("click", () => { activeCategory = button.dataset.category; document.querySelectorAll(".recipe-tab").forEach(tab => tab.classList.toggle("is-active", tab === button)); render(); }));
   els.search.addEventListener("input", render);
   document.getElementById("addRecipe").onclick = () => openEditor();

@@ -11,6 +11,8 @@ contextBridge.exposeInMainWorld("mediaLibrary", {
   restoreBackup: (payload) => ipcRenderer.invoke("backup:restore", payload),
   resetEverything: () => ipcRenderer.invoke("library:reset-all"),
   downloadUpdate: () => ipcRenderer.invoke("updater:download"),
+  getCacheSize: () => ipcRenderer.invoke("cache:get-size"),
+  clearCache: () => ipcRenderer.invoke("cache:clear"),
   listPlans: () => ipcRenderer.invoke("plans:list"),
   savePlans: (plans) => ipcRenderer.invoke("plans:save", plans),
   importPlanAttachment: () => ipcRenderer.invoke("plans:import-attachment"),

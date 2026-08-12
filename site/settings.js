@@ -12,6 +12,14 @@
   }
   document.getElementById("palette-settings").addEventListener("click", () => openModal({ heading: "Temă de culoare", options: [["violet", "Violet (principală)"], ["blue", "Albastru"], ["red", "Roșiatic"], ["pink", "Roz"], ["white", "Alb simplu"], ["turquoise", "Turcoaz"], ["yellow", "Galben"]].map(([value, label]) => ({ label, selected: ThemeManager.getPalette() === value, action: () => ThemeManager.setPalette(value) })), buttons: [{ label: "Anulează" }] }));
   document.getElementById("appearance-settings").addEventListener("click", () => openModal({ heading: "Aspect", options: [["light", "Deschis"], ["dark", "Întunecat"], ["auto", "Automat"]].map(([value, label]) => ({ label, selected: ThemeManager.getTheme() === value, action: () => ThemeManager.setAppearance(value) })), buttons: [{ label: "Anulează" }] }));
+  const formatBytes = (bytes) => `${(Math.max(0, bytes || 0) / 1024 / 1024).toFixed(2)}MB`;
+  document.getElementById("clear-cache").addEventListener("click", async () => {
+    try {
+      const size = await window.mediaLibrary.getCacheSize();
+      const formatted = formatBytes(size);
+      openModal({ heading: "Curățare cache", text: `<strong style="display:block;font-size:1.4rem;color:var(--text);text-align:center;padding:.8rem 0">Salvează ${formatted}</strong>`, buttons: [{ label: "Anulează" }, { label: `Curăță ${formatted}`, variant: "dialog-action--primary", action: async () => { const cleared = await window.mediaLibrary.clearCache(); notice(`Au fost eliberați ${formatBytes(cleared)}.`); } }] });
+    } catch { notice("Cache-ul nu a putut fi analizat."); }
+  });
   const recipeStatus = document.getElementById("recipes-setting-status");
   const refreshRecipeStatus = () => { recipeStatus.textContent = BusuiocFeatures.recipesEnabled() ? "Activată — apare în navigare" : "Dezactivată — ascunsă din navigare"; };
   refreshRecipeStatus();

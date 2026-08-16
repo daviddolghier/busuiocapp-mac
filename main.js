@@ -6,6 +6,8 @@ const { autoUpdater } = require("electron-updater");
 
 let win;
 let updater;
+let pendingMusicPath = null;
+const AUDIO_EXTENSIONS = new Set([".mp3", ".wav", ".ogg"]);
 const DEFAULT_SHORTCUTS = { fullscreen: "F11", home: "F1", gallery: "F2", anniversaries: "F3", map: "F4", myplan: "F5", appearance: "F12", add: "Alt+A", easterEgg: "Alt+F1" };
 let shortcuts = { ...DEFAULT_SHORTCUTS };
 const shortcutsPath = () => path.join(app.getPath("userData"), "shortcuts.json");
@@ -66,6 +68,54 @@ function recipePaths() {
     const root = path.join(app.getPath("userData"), "recipes");
     return { root, images: path.join(root, "images") };
 }
+
+function isSupportedAudioFile(filePath) {
+    return typeof filePath === "string" && AUDIO_EXTENSIONS.has(path.extname(filePath).toLowerCase());
+}
+
+function audioPathFromArguments(args) {
+    return args.find((value) => isSupportedAudioFile(value));
+}
+
+function musicFileDetails(filePath) {
+    return { path: filePath, name: path.basename(filePath), src: pathToFileURL(filePath).href };
+}
+
+function setWindowForPage(url) {
+    if (!win || !url) return;
+    const isMusicPlayer = /\/music-player\.html(?:[?#]|$)/i.test(url);
+    if (isMusicPlayer) {
+        win.setMinimumSize(750, 750);
+        win.setMaximumSize(750, 750);
+        win.setSize(750, 750);
+    } else {
+        win.setMaximumSize(0, 0);
+        win.setMinimumSize(1300, 850);
+        win.setSize(1300, 850);
+    }
+}
+
+function openMusicFile(filePath) {
+    if (!isSupportedAudioFile(filePath)) return;
+    pendingMusicPath = filePath;
+    if (win) win.loadFile(path.join(__dirname, "site", "music-player.html"));
+}
+
+const initialMusicPath = audioPathFromArguments(process.argv);
+if (initialMusicPath) pendingMusicPath = initialMusicPath;
+if (!app.requestSingleInstanceLock()) app.quit();
+
+app.on("second-instance", (_event, commandLine) => {
+    const filePath = audioPathFromArguments(commandLine);
+    if (filePath) openMusicFile(filePath);
+    if (win) { win.show(); win.focus(); }
+});
+
+app.on("open-file", (event, filePath) => {
+    event.preventDefault();
+    if (app.isReady()) openMusicFile(filePath);
+    else if (isSupportedAudioFile(filePath)) pendingMusicPath = filePath;
+});
 
 function storagePaths() {
     const root = path.join(app.getPath("userData"), "my-storage");
@@ -398,6 +448,21 @@ app.whenReady().then(async () => {
     ipcMain.handle("plans:save", async (_event, plans) => savePlans(plans));
     ipcMain.handle("plans:import-attachment", importPlanAttachment);
     ipcMain.handle("recipes:import-image", importRecipeImage);
+    ipcMain.handle("music:choose", async () => {
+        const selected = await dialog.showOpenDialog(win, {
+            title: "Alege muzica",
+            properties: ["openFile"],
+            filters: [{ name: "Fișiere audio", extensions: ["mp3", "wav", "ogg"] }],
+        });
+        if (selected.canceled || !selected.filePaths[0]) return { canceled: true };
+        return { canceled: false, ...musicFileDetails(selected.filePaths[0]) };
+    });
+    ipcMain.handle("music:get-startup-file", () => {
+        if (!pendingMusicPath) return null;
+        const file = musicFileDetails(pendingMusicPath);
+        pendingMusicPath = null;
+        return file;
+    });
     ipcMain.handle("notifications:show", (_event, payload = {}) => {
         if (Notification.isSupported()) new Notification({ title: String(payload.title || "Busuioc App"), body: String(payload.body || "Notificare de test"), icon: path.join(__dirname, "site", "images", "logo.png") }).show();
         return true;
@@ -434,7 +499,9 @@ function createWindow() {
         }
     });
 
-    win.loadFile("site/index.html");
+    win.webContents.on("did-navigate", (_event, url) => setWindowForPage(url));
+    if (pendingMusicPath) openMusicFile(pendingMusicPath);
+    else win.loadFile("site/index.html");
 
     globalShortcut.register("F11", () => {
         win.setFullScreen(!win.isFullScreen());

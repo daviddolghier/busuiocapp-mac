@@ -17,6 +17,8 @@ contextBridge.exposeInMainWorld("mediaLibrary", {
   savePlans: (plans) => ipcRenderer.invoke("plans:save", plans),
   importPlanAttachment: () => ipcRenderer.invoke("plans:import-attachment"),
   importRecipeImage: () => ipcRenderer.invoke("recipes:import-image"),
+  chooseMusic: () => ipcRenderer.invoke("music:choose"),
+  getStartupMusic: () => ipcRenderer.invoke("music:get-startup-file"),
   showNotification: (payload) => ipcRenderer.invoke("notifications:show", payload),
   getShortcuts: () => ipcRenderer.invoke("shortcuts:get"),
   saveShortcuts: (shortcuts) => ipcRenderer.invoke("shortcuts:save", shortcuts),

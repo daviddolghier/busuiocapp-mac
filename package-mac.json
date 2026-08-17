@@ -1,8 +1,8 @@
 {
   "name": "Busuioc-App",
-  "version": "1.0.18",
+  "version": "1.0.19",
   "description": "Busuioc App desktop application",
-  "author": "David",
+  "author": "David Dolghier",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
@@ -32,14 +32,27 @@
 
     "fileAssociations": [
       {
-        "ext": ["mp3", "wav", "ogg"],
-        "name": "Busuioc Music",
-        "description": "Fișier audio pentru Busuioc App",
-        "role": "Viewer"
+        "ext": "mp3",
+        "name": "MP3 Audio File",
+        "description": "MP3 audio file",
+        "icon": "installer/MP3.icns"
+      },
+      {
+        "ext": "wav",
+        "name": "WAV Audio File",
+        "description": "WAV audio file",
+        "icon": "installer/WAV.icns"
+      },
+      {
+        "ext": "ogg",
+        "name": "OGG Audio File",
+        "description": "OGG audio file",
+        "icon": "installer/OGG.icns"
       }
     ],
 
     "mac": {
+      "icon": "installer/logo.icns",
       "category": "public.app-category.utilities",
       "artifactName": "BusuiocApp-${arch}.${ext}",
       "target": [

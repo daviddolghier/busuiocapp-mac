@@ -201,6 +201,93 @@ function draw() {
     ctx.lineWidth = 2;
     ctx.strokeStyle = "rgba(255,255,255,0.3)";
     ctx.stroke();
+    // ==========================================
+// LINIA 4 — BASS CU LINII PUTERNICE
+// ==========================================
+    const lineCount = 120;
+    const minLength = 5;
+    const maxLength = 128;
+    const lineWidth = 2;
+    const lineBaseRadius = baseRadius + 8;
+
+    ctx.save();
+
+    ctx.strokeStyle = "rgba(255,255,255,0.25)";
+    ctx.lineWidth = lineWidth;
+    ctx.lineCap = "butt";
+
+    for (let i = 0; i < lineCount; i++) {
+        const position = i / lineCount;
+        const angle = position * Math.PI * 2;
+
+        const value = getSpectrumValue(position);
+
+        // Amplifică mult diferențele din bass
+        const bassValue = Math.pow(value, 0.45);
+
+        const dynamicLength =
+            minLength + bassValue * (maxLength - minLength);
+
+        const innerRadius = lineBaseRadius;
+        const outerRadius = lineBaseRadius + dynamicLength;
+
+        const x1 = cx + Math.cos(angle) * innerRadius;
+        const y1 = cy + Math.sin(angle) * innerRadius;
+
+        const x2 = cx + Math.cos(angle) * outerRadius;
+        const y2 = cy + Math.sin(angle) * outerRadius;
+
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.stroke();
+    }
+
+    ctx.restore();
+
+    // ==========================================
+// LINIA 5 — BASS CU LINII PUTERNICE
+// ==========================================
+    const lineCount2 = 120;
+    const minLength2 = 5;
+    const maxLength2 = 64;
+    const lineWidth2 = 2;
+    const lineBaseRadius2 = baseRadius + 8;
+
+    ctx.save();
+
+    ctx.strokeStyle = "rgba(255,255,255,0.35)";
+    ctx.lineWidth2 = lineWidth2;
+    ctx.lineCap2 = "butt";
+
+    for (let i = 0; i < lineCount2; i++) {
+        const position = i / lineCount2;
+        const angle = position * Math.PI * 2;
+
+        const value = getSpectrumValue(position);
+
+        // Amplifică mult diferențele din bass
+        const bassValue = Math.pow(value, 0.45);
+
+        const dynamicLength =
+            minLength2 + bassValue * (maxLength2 - minLength2);
+
+        const innerRadius = lineBaseRadius2;
+        const outerRadius = lineBaseRadius2 + dynamicLength;
+
+        const x1 = cx + Math.cos(angle) * innerRadius;
+        const y1 = cy + Math.sin(angle) * innerRadius;
+
+        const x2 = cx + Math.cos(angle) * outerRadius;
+        const y2 = cy + Math.sin(angle) * outerRadius;
+
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.stroke();
+    }
+
+    ctx.restore();
 }
 
 draw();

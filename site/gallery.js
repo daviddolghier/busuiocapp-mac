@@ -341,15 +341,44 @@ function bindToolbarControls() {
 
   // Edit Mode Button
   if (els.btnEditMode) {
+    let floatingSaveBtn = document.getElementById("floatingSaveEditBtn");
+    if (!floatingSaveBtn) {
+      floatingSaveBtn = document.createElement("button");
+      floatingSaveBtn.id = "floatingSaveEditBtn";
+      floatingSaveBtn.type = "button";
+      floatingSaveBtn.className = "floating-save-btn is-hidden";
+      floatingSaveBtn.hidden = true;
+      floatingSaveBtn.style.setProperty("display", "none", "important");
+      floatingSaveBtn.innerHTML = '<i class="bi bi-check2-circle"></i> Salvează';
+      document.body.appendChild(floatingSaveBtn);
+
+      floatingSaveBtn.addEventListener("click", async () => {
+        state.isEditMode = false;
+        els.btnEditMode.classList.remove("is-active");
+        floatingSaveBtn.hidden = true;
+        floatingSaveBtn.classList.add("is-hidden");
+        floatingSaveBtn.style.setProperty("display", "none", "important");
+        await persistOrder();
+        showToast("Ordinea a fost salvată.");
+        render();
+      });
+    }
+
     els.btnEditMode.addEventListener("click", () => {
       state.isEditMode = !state.isEditMode;
       
-      // REQUIREMENT: When Edit Mode is enabled, automatically switch scale to 3x3
       if (state.isEditMode) {
         setScale("3x3");
         showToast("Modul Editează activat — trage cardurile pentru a reordona");
+        floatingSaveBtn.hidden = false;
+        floatingSaveBtn.classList.remove("is-hidden");
+        floatingSaveBtn.style.removeProperty("display");
       } else {
         showToast("Modul Editează dezactivat");
+        floatingSaveBtn.hidden = true;
+        floatingSaveBtn.classList.add("is-hidden");
+        floatingSaveBtn.style.setProperty("display", "none", "important");
+        persistOrder();
       }
 
       els.btnEditMode.classList.toggle("is-active", state.isEditMode);
@@ -791,7 +820,7 @@ function galleryCard(item, index, totalInGroup) {
   `
     : "";
 
-  const favBtn = `
+  const favBtn = state.isEditMode ? `` : `
     <button type="button" class="card-fav-btn ${isFav ? "is-favorite" : ""}" data-action="toggle-favorite" aria-label="${isFav ? "Elimină din favorite" : "Adaugă la favorite"}" title="${isFav ? "Elimină din favorite" : "Adaugă la favorite"}">
       <i class="bi ${isFav ? "bi-heart-fill" : "bi-heart"}"></i>
     </button>

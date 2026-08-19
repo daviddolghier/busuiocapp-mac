@@ -270,10 +270,13 @@ body {
   box-shadow: var(--accent-glow);
 }
 .nav [data-feature="recipes"][hidden],
-.nav [data-feature="recipes"].is-feature-hidden {
+.nav [data-feature="recipes"].is-feature-hidden,
+.nav [data-feature="music"][hidden],
+.nav [data-feature="music"].is-feature-hidden,
+[hidden],
+.is-feature-hidden {
   display: none !important;
 }
-.nav [data-feature="storage"][hidden],.nav [data-feature="storage"].is-feature-hidden { display:none !important; }
 .chip--soft {
   background: rgba(139, 92, 246, 0.12);
   color: var(--accent-light);
@@ -1750,3 +1753,35 @@ main, .page-main {
   transform: translateY(-3px) scale(1.02) !important;
   transition: all 0.15s ease-out !important;
 }
+
+/* Gallery edit mode — floating save button */
+.floating-save-btn {
+  position: fixed;
+  z-index: 9999;
+  bottom: 2rem;
+  right: 2rem;
+  display: inline-flex;
+  align-items: center;
+  gap: .55rem;
+  padding: .85rem 1.5rem;
+  border: 0;
+  border-radius: 999px;
+  background: var(--accent-gradient);
+  color: #fff;
+  font: 700 1rem var(--font-body);
+  cursor: pointer;
+  box-shadow: 0 6px 28px rgba(0,0,0,.35);
+  transition: transform .18s, box-shadow .18s;
+}
+.floating-save-btn[hidden],
+.floating-save-btn.is-hidden {
+  display: none !important;
+}
+.floating-save-btn:hover { transform: translateY(-3px) scale(1.04); box-shadow: 0 10px 36px rgba(0,0,0,.45); }
+.floating-save-btn i { font-size: 1.15rem; }
+
+/* Map sidebar — photos toggle */
+.location-list__photos[hidden] { display: none; }
+.location-list__chevron { transition: transform .22s ease; flex-shrink: 0; }
+.location-list__chevron.is-open { transform: rotate(90deg); }
+.location-list__item.is-active { border-color: var(--accent-light); background: color-mix(in srgb,var(--accent) 12%,transparent); }

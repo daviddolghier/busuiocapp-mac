@@ -6,6 +6,11 @@
       const shouldHide = !enabled(feature);
       element.hidden = shouldHide;
       element.classList.toggle("is-feature-hidden", shouldHide);
+      if (shouldHide) {
+        element.style.setProperty("display", "none", "important");
+      } else {
+        element.style.removeProperty("display");
+      }
     });
     if (!enabled("recipes") && /recipes\.html$/i.test(location.pathname)) location.replace("index.html");
     if (!enabled("music") && /music-player\.html$/i.test(location.pathname)) location.replace("index.html");

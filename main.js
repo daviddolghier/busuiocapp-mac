@@ -406,6 +406,162 @@ app.whenReady().then(async () => {
         await fs.writeFile(target.filePath, makeZip(entries));
         return { canceled: false, path: target.filePath };
     });
+    ipcMain.handle("media:export-zip", async () => {
+        const mediaExtensions = new Set([".jpg", ".jpeg", ".png", ".webp", ".gif", ".heic", ".mp4", ".mov", ".mkv", ".avi", ".webm"]);
+        const ignoredSystemFiles = new Set(["logo.png", "black-logo.png", "qr.png", "video.png", "default.png", "bg.jpg", "desktop.ini"]);
+        const entries = [];
+        const usedNames = new Set();
+        const scannedFilePaths = new Set();
+
+        const addFileToZip = async (filePath, zipName) => {
+            const realPath = await fs.realpath(filePath).catch(() => filePath);
+            if (scannedFilePaths.has(realPath)) return;
+            scannedFilePaths.add(realPath);
+
+            const ext = path.extname(filePath).toLowerCase();
+            if (!mediaExtensions.has(ext)) return;
+            const baseName = path.basename(filePath).toLowerCase();
+            if (ignoredSystemFiles.has(baseName)) return;
+
+            let finalName = zipName;
+            let counter = 1;
+            while (usedNames.has(finalName.toLowerCase())) {
+                const extName = path.extname(zipName);
+                const nameNoExt = path.basename(zipName, extName);
+                finalName = `${nameNoExt}_${counter}${extName}`;
+                counter += 1;
+            }
+            usedNames.add(finalName.toLowerCase());
+
+            try {
+                const data = await fs.readFile(filePath);
+                entries.push({ name: finalName, data });
+            } catch (err) {
+                console.warn("Eroare citire fișier pentru ZIP:", filePath, err);
+            }
+        };
+
+        const scanDirectory = async (dirPath, isSiteImagesRoot = false) => {
+            try {
+                const items = await fs.readdir(dirPath, { withFileTypes: true });
+                for (const item of items) {
+                    if (isSiteImagesRoot && item.isDirectory() && item.name.toLowerCase() === "food") {
+                        continue; // Exclude food folder from main media export
+                    }
+                    const fullPath = path.join(dirPath, item.name);
+                    if (item.isDirectory()) {
+                        await scanDirectory(fullPath, false);
+                    } else if (item.isFile()) {
+                        await addFileToZip(fullPath, item.name);
+                    }
+                }
+            } catch { /* ignore */ }
+        };
+
+        const candidateDirs = [
+            path.resolve(__dirname, "site/images"),
+            path.resolve(app.getAppPath(), "site/images"),
+            path.resolve(process.cwd(), "site/images"),
+        ];
+        const uniqueDirs = [...new Set(candidateDirs)];
+        for (const dir of uniqueDirs) {
+            await scanDirectory(dir, true);
+        }
+
+        try {
+            const paths = await ensureLibrary();
+            await scanDirectory(paths.media);
+        } catch { /* ignore if library missing */ }
+
+        if (!entries.length) {
+            return { canceled: true, empty: true };
+        }
+
+        const target = await dialog.showSaveDialog(win && !win.isDestroyed() ? win : null, {
+            title: "Descarcă toată media",
+            defaultPath: `Busuioc-Media-${new Date().toISOString().slice(0, 10)}.zip`,
+            filters: [{ name: "Arhivă ZIP", extensions: ["zip"] }],
+        });
+        if (target.canceled || !target.filePath) return { canceled: true };
+
+        await fs.writeFile(target.filePath, makeZip(entries));
+        return { canceled: false, path: target.filePath, count: entries.length };
+    });
+    ipcMain.handle("recipes:export-food-zip", async () => {
+        const mediaExtensions = new Set([".jpg", ".jpeg", ".png", ".webp", ".gif", ".heic", ".mp4", ".mov", ".mkv", ".avi", ".webm"]);
+        const entries = [];
+        const usedNames = new Set();
+        const scannedFilePaths = new Set();
+
+        const addFileToZip = async (filePath, zipName) => {
+            const realPath = await fs.realpath(filePath).catch(() => filePath);
+            if (scannedFilePaths.has(realPath)) return;
+            scannedFilePaths.add(realPath);
+
+            const ext = path.extname(filePath).toLowerCase();
+            if (!mediaExtensions.has(ext)) return;
+
+            let finalName = zipName;
+            let counter = 1;
+            while (usedNames.has(finalName.toLowerCase())) {
+                const extName = path.extname(zipName);
+                const nameNoExt = path.basename(zipName, extName);
+                finalName = `${nameNoExt}_${counter}${extName}`;
+                counter += 1;
+            }
+            usedNames.add(finalName.toLowerCase());
+
+            try {
+                const data = await fs.readFile(filePath);
+                entries.push({ name: finalName, data });
+            } catch (err) {
+                console.warn("Eroare citire fișier mâncare:", filePath, err);
+            }
+        };
+
+        const scanDirectory = async (dirPath) => {
+            try {
+                const items = await fs.readdir(dirPath, { withFileTypes: true });
+                for (const item of items) {
+                    const fullPath = path.join(dirPath, item.name);
+                    if (item.isDirectory()) {
+                        await scanDirectory(fullPath);
+                    } else if (item.isFile()) {
+                        await addFileToZip(fullPath, item.name);
+                    }
+                }
+            } catch { /* directory missing or unreadable */ }
+        };
+
+        const candidateFoodDirs = [
+            path.resolve(__dirname, "site/images/food"),
+            path.resolve(app.getAppPath(), "site/images/food"),
+            path.resolve(process.cwd(), "site/images/food"),
+        ];
+        const uniqueFoodDirs = [...new Set(candidateFoodDirs)];
+        for (const foodDir of uniqueFoodDirs) {
+            await scanDirectory(foodDir);
+        }
+
+        try {
+            const recPaths = recipePaths();
+            await scanDirectory(recPaths.images);
+        } catch { /* ignore if missing */ }
+
+        if (!entries.length) {
+            return { canceled: true, empty: true };
+        }
+
+        const target = await dialog.showSaveDialog(win && !win.isDestroyed() ? win : null, {
+            title: "Descarcă toată mâncarea",
+            defaultPath: `Busuioc-Mancare-${new Date().toISOString().slice(0, 10)}.zip`,
+            filters: [{ name: "Arhivă ZIP", extensions: ["zip"] }],
+        });
+        if (target.canceled || !target.filePath) return { canceled: true };
+
+        await fs.writeFile(target.filePath, makeZip(entries));
+        return { canceled: false, path: target.filePath, count: entries.length };
+    });
     ipcMain.handle("backup:choose", async () => {
         const selected = await dialog.showOpenDialog(win, { title: "Alege un backup", properties: ["openFile"], filters: [{ name: "Backup ZIP", extensions: ["zip", "busuiocfile"] }] });
         if (selected.canceled || !selected.filePaths[0]) return { canceled: true };
@@ -441,6 +597,9 @@ app.whenReady().then(async () => {
         const paths = libraryPaths();
         await fs.rm(paths.root, { recursive: true, force: true });
         await ensureLibrary();
+        // Also delete plans folder so plans are fully reset
+        const planFolder = planPaths().root;
+        await fs.rm(planFolder, { recursive: true, force: true });
         setTimeout(() => app.quit(), 250);
         return true;
     });

@@ -10,6 +10,7 @@
     taskEditor: document.getElementById("taskEditor"),
     attachmentEditor: document.getElementById("attachmentEditor"),
     toast: document.getElementById("planToast"),
+    deletePlanBtn: document.getElementById("deletePlan"),
   };
 
   const DEFAULT_PLANS = [
@@ -133,6 +134,10 @@
     draftTasks = structuredClone(plan?.tasks || []);
     draftAttachments = structuredClone(plan?.attachments || []);
     renderDraft();
+    // Show delete button only when editing an existing plan
+    if (els.deletePlanBtn) {
+      els.deletePlanBtn.hidden = !editingId;
+    }
     els.dialog.showModal();
     els.title.focus();
   }
@@ -142,6 +147,17 @@
   document.getElementById("createPlan").onclick = () => openEditor();
   document.getElementById("closePlanDialog").onclick = closeEditor;
   document.getElementById("cancelPlan").onclick = closeEditor;
+
+  if (els.deletePlanBtn) {
+    els.deletePlanBtn.onclick = async () => {
+      if (!editingId) return;
+      if (!window.confirm("Sigur vrei să ștergi acest plan? Acțiunea nu poate fi anulată.")) return;
+      plans = plans.filter((entry) => entry.id !== editingId);
+      await persist();
+      closeEditor();
+      showToast("Planul a fost șters.");
+    };
+  }
   document.getElementById("addTask").onclick = () => {
     draftTasks.push({ id: makeId("task"), text: "", done: false });
     renderDraft();

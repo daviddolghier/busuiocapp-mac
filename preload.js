@@ -7,6 +7,8 @@ contextBridge.exposeInMainWorld("mediaLibrary", {
   getGalleryState: () => ipcRenderer.invoke("media-library:get-gallery-state"),
   saveGalleryState: (state) => ipcRenderer.invoke("media-library:save-gallery-state", state),
   createBackup: (preferences) => ipcRenderer.invoke("backup:create", preferences),
+  exportMediaZip: () => ipcRenderer.invoke("media:export-zip"),
+  exportFoodZip: () => ipcRenderer.invoke("recipes:export-food-zip"),
   chooseBackup: () => ipcRenderer.invoke("backup:choose"),
   restoreBackup: (payload) => ipcRenderer.invoke("backup:restore", payload),
   resetEverything: () => ipcRenderer.invoke("library:reset-all"),

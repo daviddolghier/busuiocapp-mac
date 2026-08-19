@@ -77,11 +77,27 @@ function addPlace(name, items, coords) {
   allBounds.push(coords);
   document.getElementById("locationList").insertAdjacentHTML("beforeend", `
     <article class="location-list__entry"><button class="location-list__item" data-place="${encodeURIComponent(name)}">
-      <span><i class="bi bi-geo-alt-fill"></i></span><div><strong>${name}</strong><small>${items.length} amintiri</small></div><i class="bi bi-chevron-right"></i>
-    </button><div class="location-list__photos">${sidebarPhotos(items)}</div></article>`);
+      <span><i class="bi bi-geo-alt-fill"></i></span><div><strong>${name}</strong><small>${items.length} amintiri</small></div><i class="bi bi-chevron-right location-list__chevron"></i>
+    </button><div class="location-list__photos" hidden>${sidebarPhotos(items)}</div></article>`);
   const entry = document.querySelector(`[data-place="${encodeURIComponent(name)}"]`).closest(".location-list__entry");
   entry.querySelector(".location-list__item").addEventListener("click", () => {
-    map.flyTo(coords, 12); marker.openPopup();
+    // Hide all other open photo panels
+    document.querySelectorAll(".location-list__photos").forEach((panel) => {
+      if (panel !== entry.querySelector(".location-list__photos")) {
+        panel.hidden = true;
+        panel.closest(".location-list__entry")?.querySelector(".location-list__item")?.classList.remove("is-active");
+        panel.closest(".location-list__entry")?.querySelector(".location-list__chevron")?.classList.remove("is-open");
+      }
+    });
+    // Toggle current
+    const photos = entry.querySelector(".location-list__photos");
+    const isOpen = !photos.hidden;
+    photos.hidden = isOpen;
+    entry.querySelector(".location-list__item").classList.toggle("is-active", !isOpen);
+    entry.querySelector(".location-list__chevron").classList.toggle("is-open", !isOpen);
+    // Always fly to location
+    map.flyTo(coords, 12);
+    marker.openPopup();
   });
   entry.querySelectorAll("[data-preview-src]").forEach((button) => button.addEventListener("click", () => showPreview(decodeURIComponent(button.dataset.previewSrc), button.dataset.previewKind)));
 }

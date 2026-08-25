@@ -1,4 +1,5 @@
 (() => {
+
 const journey = window.JourneyMap || {};
 
 const SEED_MEDIA = journey.SEED_MEDIA || [];
@@ -82,16 +83,39 @@ function saveFavorites(favSet) {
   }
 }
 
-function normalizeFolderKey(value = "") {
-  const n = normalizeText(value);
-  if (n.includes("cerere")) return "cerere-casatorie";
-  if (n.includes("nunta") || n.includes("hidden")) return "nunta";
-  if (n.includes("newphoto") || n === "amintiri") return "amintiri";
-  const trimmed = String(value).trim();
-  if (!trimmed) return "amintiri";
-  if (trimmed.startsWith("custom:")) return trimmed;
-  return `custom:${trimmed}`;
-}
+  function normalizeFolderKey(value = "") {
+    const raw = String(value).trim();
+
+    if (!raw) {
+      return "amintiri";
+    }
+
+    // Orice cale custom este PĂSTRATĂ exact ca folder custom.
+    // Asta împiedică un subfolder numit "nunta" să devină
+    // folderul sistem "Nuntă (Hidden)".
+    if (raw.startsWith("custom:")) {
+      return raw;
+    }
+
+    const n = normalizeText(raw);
+
+    // Doar valorile sistem simple pot fi mapate.
+    if (n === "cerere" || n === "cerere casatorie") {
+      return "cerere-casatorie";
+    }
+
+    if (n === "newphoto" || n === "amintiri") {
+      return "amintiri";
+    }
+
+    // "nunta" simplu rămâne sistemul existent.
+    // Căile custom au fost deja returnate mai sus.
+    if (n === "nunta" || n === "nunta hidden") {
+      return "nunta";
+    }
+
+    return `custom:${raw}`;
+  }
 
 function isSystemFolder(key) {
   return Object.hasOwn(SYSTEM_FOLDERS, key);
@@ -108,6 +132,7 @@ const els = {
   mediaModalBody: document.getElementById("mediaModalBody"),
   galleryMapStage: document.getElementById("galleryMapStage"),
   btnImportPhoto: document.getElementById("btnImportPhoto"),
+  btnCreateFolder: document.getElementById("btnCreateFolder"),
   btnFavoriteFolder: document.getElementById("btnFavoriteFolder"),
   btnEditMode: document.getElementById("btnEditMode"),
   btnSlideshow: document.getElementById("btnSlideshow"),
@@ -125,6 +150,23 @@ const els = {
   importFolderSelect: document.getElementById("importFolderSelect"),
   newFolderContainer: document.getElementById("newFolderContainer"),
   importNewFolder: document.getElementById("importNewFolder"),
+  folderModal: document.getElementById("folderModal"),
+  btnCloseFolderModal: document.getElementById("btnCloseFolderModal"),
+  btnCancelFolderModal: document.getElementById("btnCancelFolderModal"),
+  folderForm: document.getElementById("folderForm"),
+  folderNameInput: document.getElementById("folderNameInput"),
+  btnSubmitNewFolder: document.getElementById("btnSubmitNewFolder"),
+  btnChoosePcFolder: document.getElementById("btnChoosePcFolder"),
+  editMediaModal: document.getElementById("editMediaModal"),
+  btnCloseEditMediaModal: document.getElementById("btnCloseEditMediaModal"),
+  btnCancelEditMedia: document.getElementById("btnCancelEditMedia"),
+  editMediaForm: document.getElementById("editMediaForm"),
+  editMediaId: document.getElementById("editMediaId"),
+  editMediaTitle: document.getElementById("editMediaTitle"),
+  editMediaDescription: document.getElementById("editMediaDescription"),
+  editMediaLocation: document.getElementById("editMediaLocation"),
+  editMediaFolderSelect: document.getElementById("editMediaFolderSelect"),
+  btnSaveEditMedia: document.getElementById("btnSaveEditMedia"),
   slideshowModal: document.getElementById("slideshowModal"),
   slideshowStage: document.getElementById("slideshowStage"),
   previousSlide: document.getElementById("previousSlide"),
@@ -168,24 +210,33 @@ function saveCustomMedia(items) {
   }
 }
 
-const state = {
-  items: [...SEED_MEDIA],
-  filter: "all",
-  scale: "3x3",
-  isEditMode: false,
-  openFolders: new Set(),
-  folderLimits: new Map(),
-  userFolders: new Set(),
-  favorites: new Set(),
-  slideshowIndex: 0,
-  slideshowItems: [],
-  slideshowTimerInterval: parseInt(localStorage.getItem(STORAGE_KEY_CINEMATIC_TIMER) || "5", 10),
-  slideshowTimerId: null,
-  isSlideshowActive: false,
-  selectedFile: null,
-  selectedFileName: null,
-  dragItemId: null,
-};
+  const state = {
+    items: [...SEED_MEDIA],
+    filter: "all",
+    scale: "3x3",
+    isEditMode: false,
+
+    // null = rădăcina galeriei
+    // custom:Disc F/2021 = folderul în care suntem
+    currentFolder: null,
+
+    openFolders: new Set(),
+    folderLimits: new Map(),
+    subfolders: new Map(),
+    userFolders: new Set(),
+    favorites: new Set(),
+    slideshowIndex: 0,
+    slideshowItems: [],
+    slideshowTimerInterval: parseInt(
+        localStorage.getItem(STORAGE_KEY_CINEMATIC_TIMER) || "5",
+        10
+    ),
+    slideshowTimerId: null,
+    isSlideshowActive: false,
+    selectedFile: null,
+    selectedFileName: null,
+    dragItemId: null,
+  };
 
 if (document.readyState === "loading") {
   document.addEventListener("DOMContentLoaded", init, { once: true });
@@ -209,15 +260,26 @@ async function init() {
   } catch (error) {
     console.error("Biblioteca persistentă nu a putut fi încărcată:", error);
   }
+
+  const loadedUserFolders = loadUserFolders();
+  loadedUserFolders.forEach((f) => state.userFolders.add(f));
+
   state.items.forEach((item) => {
     const key = folderKey(item);
-    if (key) state.openFolders.add(key);
-    if (isUserFolder(key)) state.userFolders.add(key);
+
+    if (isUserFolder(key)) {
+      state.userFolders.add(key);
+    }
   });
+
+  state.currentFolder = null;
+  saveUserFolders(state.userFolders);
   populateFolderDropdown();
   bindRevealObserver();
   bindFilters();
   bindToolbarControls();
+  bindFolderModalEvents();
+  bindEditMediaModalEvents();
   bindImportModalEvents();
   bindSlideshowEvents();
   render();
@@ -386,12 +448,223 @@ function bindToolbarControls() {
     });
   }
 
+  // Create Folder Button
+  if (els.btnCreateFolder) {
+    els.btnCreateFolder.addEventListener("click", () => {
+      openFolderModal();
+    });
+  }
+
   // Import Photo (+) Button
   if (els.btnImportPhoto) {
     els.btnImportPhoto.addEventListener("click", () => {
       openImportModal();
     });
   }
+}
+
+function openFolderModal() {
+  if (els.folderForm) els.folderForm.reset();
+  if (els.folderModal) {
+    if (typeof els.folderModal.showModal === "function") {
+      els.folderModal.showModal();
+    } else {
+      els.folderModal.style.display = "block";
+    }
+  }
+}
+
+function bindFolderModalEvents() {
+  if (!els.folderModal) return;
+
+  const close = () => {
+    if (typeof els.folderModal.close === "function") {
+      els.folderModal.close();
+    } else {
+      els.folderModal.style.display = "none";
+    }
+    if (els.folderForm) els.folderForm.reset();
+  };
+
+  els.btnCloseFolderModal?.addEventListener("click", close);
+  els.btnCancelFolderModal?.addEventListener("click", close);
+
+  // Manual folder creation form submit
+  els.folderForm?.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const rawName = els.folderNameInput?.value?.trim();
+    if (!rawName) {
+      showToast("Vă rugăm introduceți un nume pentru folder!");
+      return;
+    }
+    const key = normalizeFolderKey(rawName);
+    if (isSystemFolder(key)) {
+      showToast("Acest nume de folder este rezervat.");
+      return;
+    }
+    state.userFolders.add(key);
+    state.openFolders.add(key);
+    saveUserFolders(state.userFolders);
+    populateFolderDropdown();
+    close();
+    render();
+    showToast(`Folderul „${folderLabel(key)}” a fost creat!`);
+  });
+
+  // Choose PC Folder button
+  els.btnChoosePcFolder?.addEventListener("click", async () => {
+    try {
+      if (!window.mediaLibrary?.chooseFolder) {
+        showToast("Selecția folderelor este disponibilă doar în aplicația Electron.");
+        return;
+      }
+      const result = await window.mediaLibrary.chooseFolder();
+      if (result.canceled) return;
+
+      const folderKeyValue = normalizeFolderKey(result.folderName);
+      state.userFolders.add(folderKeyValue);
+      state.openFolders.add(folderKeyValue);
+      saveUserFolders(state.userFolders);
+
+      if (!result.items || result.items.length === 0) {
+        populateFolderDropdown();
+        close();
+        render();
+        showToast(`Folderul „${result.folderName}” a fost adăugat (nu conține fișiere media).`);
+        return;
+      }
+
+      const importedItems = result.items || [];
+      const importedFolders = result.folders || [];
+
+      const rootFolderKey = `custom:${String(result.folderName).trim()}`;
+
+// Adăugăm TOATE folderele, inclusiv cele goale.
+      importedFolders.forEach((folder) => {
+        state.userFolders.add(folder);
+      });
+
+// Root-ul este garantat.
+      state.userFolders.add(rootFolderKey);
+
+      saveUserFolders(state.userFolders);
+      await window.mediaLibrary.importFolder({
+        folderName: result.folderName,
+        items: importedItems,
+      });
+
+      const importedPaths = new Set(
+          importedItems
+              .map((item) => item.filePath)
+              .filter(Boolean)
+      );
+
+      state.items = [
+        ...importedItems,
+        ...state.items.filter(
+            (existing) =>
+                !existing.filePath ||
+                !importedPaths.has(existing.filePath)
+        )
+      ];
+      persistOrder();
+      populateFolderDropdown();
+      close();
+      render();
+      showToast(`Folderul „${result.folderName}” a fost adăugat cu ${result.items.length} elemente media!`);
+    } catch (error) {
+      console.error("Eroare la importul folderului din PC:", error);
+      showToast("A apărut o eroare la citirea folderului din PC.");
+    }
+  });
+}
+
+function openEditMediaModal(item) {
+  if (!item || !els.editMediaModal) return;
+
+  if (els.editMediaId) els.editMediaId.value = item.id;
+  if (els.editMediaTitle) els.editMediaTitle.value = item.title || "";
+  if (els.editMediaDescription) els.editMediaDescription.value = item.description || "";
+  if (els.editMediaLocation) els.editMediaLocation.value = item.location || "";
+
+  if (els.editMediaFolderSelect) {
+    const folderOptions = Object.entries(SYSTEM_FOLDERS).map(([value, meta]) => ({
+      value,
+      label: meta.label,
+    }));
+    state.userFolders.forEach((key) => {
+      if (!folderOptions.some((f) => f.value === key)) {
+        folderOptions.push({ value: key, label: folderLabel(key) });
+      }
+    });
+    els.editMediaFolderSelect.innerHTML = folderOptions
+      .map((f) => `<option value="${escapeAttr(f.value)}">${escapeHtml(f.label)}</option>`)
+      .join("");
+    els.editMediaFolderSelect.value = folderKey(item);
+  }
+
+  if (typeof els.editMediaModal.showModal === "function") {
+    els.editMediaModal.showModal();
+  } else {
+    els.editMediaModal.style.display = "block";
+  }
+}
+
+function bindEditMediaModalEvents() {
+  if (!els.editMediaModal) return;
+
+  const close = () => {
+    if (typeof els.editMediaModal.close === "function") {
+      els.editMediaModal.close();
+    } else {
+      els.editMediaModal.style.display = "none";
+    }
+  };
+
+  els.btnCloseEditMediaModal?.addEventListener("click", close);
+  els.btnCancelEditMedia?.addEventListener("click", close);
+
+  els.editMediaForm?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const id = els.editMediaId?.value;
+    const itemIndex = state.items.findIndex((item) => item.id === id);
+    if (itemIndex === -1) {
+      showToast("Elementul nu a fost găsit.");
+      close();
+      return;
+    }
+
+    const title = els.editMediaTitle?.value.trim() || "Fără titlu";
+    const description = els.editMediaDescription?.value.trim() || "";
+    const location = els.editMediaLocation?.value.trim() || "";
+    const folder = els.editMediaFolderSelect?.value || "amintiri";
+
+    const item = state.items[itemIndex];
+    item.title = title;
+    item.description = description;
+    item.location = location;
+    item.folder = folder;
+    item.tag = folderLabel(folder);
+
+    if (window.mediaLibrary?.updateItem) {
+      try {
+        await window.mediaLibrary.updateItem({
+          id: item.id,
+          title,
+          description,
+          location,
+          folder,
+        });
+      } catch (error) {
+        console.error("Eroare la actualizarea elementului:", error);
+      }
+    }
+
+    persistOrder();
+    close();
+    render();
+    showToast("Modificările au fost salvate!");
+  });
 }
 
 function setScale(newScale) {
@@ -672,11 +945,16 @@ function folderKey(item) {
   return "amintiri";
 }
 
-function folderLabel(key) {
-  if (SYSTEM_FOLDERS[key]) return SYSTEM_FOLDERS[key].label;
-  if (isUserFolder(key)) return key.replace(/^custom:/, "");
-  return String(key).split("/").pop();
-}
+  function folderLabel(key) {
+    if (SYSTEM_FOLDERS[key]) return SYSTEM_FOLDERS[key].label;
+
+    if (isUserFolder(key)) {
+      const clean = key.replace(/^custom:/, "").replaceAll("\\", "/");
+      return clean.split("/").pop();
+    }
+
+    return String(key).split("/").pop();
+  }
 
 function getFolderCategory(item) {
   return folderKey(item);
@@ -701,6 +979,10 @@ function matchesFilter(item) {
 function groupByFolder(items) {
   const groups = new Map();
 
+  state.userFolders.forEach((userKey) => {
+    groups.set(userKey, []);
+  });
+
   items.forEach((item) => {
     const key = folderKey(item);
     const current = groups.get(key) || [];
@@ -714,38 +996,235 @@ function groupByFolder(items) {
       label: folderLabel(key),
       items: entries,
     }))
+    .filter((g) => {
+      if (g.items.length > 0) return true;
+      if (state.filter === "all") return true;
+      return false;
+    })
     .sort((a, b) => a.label.localeCompare(b.label, "ro"));
 }
 
-function render() {
-  const filtered = state.items.filter(matchesFilter);
-  const groups = groupByFolder(filtered);
+  function buildFolderTree(items) {
+    const root = {
+      key: "",
+      label: "",
+      items: [],
+      children: new Map(),
+    };
 
-  if (["amintiri", "cerere", "nunta"].includes(state.filter)) {
-    groups.forEach((group) => state.openFolders.add(group.key));
+    // Folderele create manual
+    state.userFolders.forEach((userKey) => {
+      if (!isUserFolder(userKey)) return;
+
+      const cleanPath = userKey
+          .replace(/^custom:/, "")
+          .replaceAll("\\", "/")
+          .split("/")
+          .filter(Boolean);
+
+      let current = root;
+
+      cleanPath.forEach((part, index) => {
+        const currentPath = cleanPath
+            .slice(0, index + 1)
+            .join("/");
+
+        const key = `custom:${currentPath}`;
+
+        if (!current.children.has(part)) {
+          current.children.set(part, {
+            key,
+            label: part,
+            items: [],
+            children: new Map(),
+          });
+        }
+
+        current = current.children.get(part);
+      });
+    });
+
+    // Media
+    items.forEach((item) => {
+      const key = folderKey(item);
+
+      // Foldere de sistem
+      if (!isUserFolder(key)) {
+        if (!root.children.has(key)) {
+          root.children.set(key, {
+            key,
+            label: folderLabel(key),
+            items: [],
+            children: new Map(),
+          });
+        }
+
+        root.children.get(key).items.push(item);
+        return;
+      }
+
+      const cleanPath = key
+          .replace(/^custom:/, "")
+          .replaceAll("\\", "/")
+          .split("/")
+          .filter(Boolean);
+
+      if (!cleanPath.length) return;
+
+      let current = root;
+
+      cleanPath.forEach((part, index) => {
+        const currentPath = cleanPath
+            .slice(0, index + 1)
+            .join("/");
+
+        const folderPath = `custom:${currentPath}`;
+
+        if (!current.children.has(part)) {
+          current.children.set(part, {
+            key: folderPath,
+            label: part,
+            items: [],
+            children: new Map(),
+          });
+        }
+
+        current = current.children.get(part);
+      });
+
+      current.items.push(item);
+    });
+
+    return root;
   }
 
-  if (els.galleryGrid) {
-    els.galleryGrid.className = `gallery-grid scale-${state.scale}`;
-    els.galleryGrid.innerHTML = groups.length > 0
-      ? groups.map((group) => renderFolder(group)).join("")
-      : `<div class="empty-gallery-msg" style="grid-column:1/-1; text-align:center; padding:4rem 1.5rem; color:var(--muted);">
-          <i class="bi bi-heartbreak" style="font-size:3rem; color:var(--rose); display:block; margin-bottom:1rem;"></i>
-          <h3>Nicio fotografie în această categorie</h3>
-          <p>${state.filter === "favorite" ? "Apasă pe inimioara de pe poze pentru a le adăuga la Favorite!" : "Adaugă fotografii folosind butonul Adaugă."}</p>
-         </div>`;
+  function render() {
+    const filtered = state.items.filter(matchesFilter);
+
+    const tree = buildFolderTree(filtered);
+
+    calculateFolderStats(tree);
+
+    if (els.galleryGrid) {
+      els.galleryGrid.className =
+          `gallery-grid scale-${state.scale}`;
+
+      els.galleryGrid.innerHTML =
+          tree.children.size > 0 ||
+          tree.items.length > 0
+              ? renderDirectory(
+                  state.currentFolder
+                      ? tree
+                      : tree
+              )
+              : `
+          <div
+            class="empty-gallery-msg"
+            style="
+              grid-column:1/-1;
+              text-align:center;
+              padding:4rem 1.5rem;
+              color:var(--muted);
+            "
+          >
+            <i
+              class="bi bi-folder-x"
+              style="
+                font-size:3rem;
+                color:var(--rose);
+                display:block;
+                margin-bottom:1rem;
+              "
+            ></i>
+
+            <h3>
+              Nicio fotografie în această categorie
+            </h3>
+
+            <p>
+              Adaugă fotografii folosind butonul Adaugă.
+            </p>
+          </div>
+        `;
+    }
+
+    if (els.galleryMapStage) {
+      els.galleryMapStage.innerHTML =
+          renderMapStage(filtered);
+    }
+
+    bindDirectoryEvents();
+    bindFolderEvents();
+    bindCardEvents();
+    bindDragDrop();
+    updateFilterState();
   }
+  function bindDirectoryEvents() {
+    if (!els.galleryGrid) return;
 
-  if (els.galleryMapStage) {
-    els.galleryMapStage.innerHTML = renderMapStage(filtered);
+    els.galleryGrid
+        .querySelectorAll("[data-directory-open]")
+        .forEach((button) => {
+
+          button.addEventListener("click", (event) => {
+            event.stopPropagation();
+
+            const key =
+                button.dataset.directoryOpen;
+
+            if (!key) return;
+
+            state.currentFolder = key;
+
+            state.folderLimits.clear();
+
+            render();
+          });
+        });
+
+
+    els.galleryGrid
+        .querySelectorAll("[data-directory-back]")
+        .forEach((button) => {
+
+          button.addEventListener("click", () => {
+
+            state.currentFolder =
+                getParentFolderKey(
+                    state.currentFolder
+                );
+
+            state.folderLimits.clear();
+
+            render();
+          });
+        });
+
+
+    els.galleryGrid
+        .querySelectorAll("[data-folder-more]")
+        .forEach((button) => {
+
+          button.addEventListener("click", (event) => {
+            event.stopPropagation();
+
+            const key =
+                button.dataset.folderMoreKey ||
+                state.currentFolder;
+
+            const current =
+                state.folderLimits.get(key) ||
+                DEFAULT_PAGE_SIZE;
+
+            state.folderLimits.set(
+                key,
+                current + DEFAULT_PAGE_SIZE
+            );
+
+            render();
+          });
+        });
   }
-
-  bindFolderEvents();
-  bindCardEvents();
-  bindDragDrop();
-  updateFilterState();
-}
-
 function updateFilterState() {
   if (!els.filterRow) return;
   els.filterRow.querySelectorAll("[data-filter]").forEach((button) => {
@@ -754,57 +1233,6 @@ function updateFilterState() {
   if (els.btnFavoriteFolder) {
     els.btnFavoriteFolder.classList.toggle("is-active", state.filter === "favorite");
   }
-}
-
-function renderFolder(group) {
-  const isOpen = state.openFolders.has(group.key);
-  const limit = state.folderLimits.get(group.key) || DEFAULT_PAGE_SIZE;
-  const visibleItems = isOpen ? group.items.slice(0, limit) : [];
-  const remaining = group.items.length - visibleItems.length;
-
-  const isHiddenFolder = group.key === "nunta";
-  const canDeleteFolder = state.isEditMode && isUserFolder(group.key);
-
-  return `
-    <section class="gallery-folder ${isOpen ? "is-open" : ""}" data-folder-key="${escapeAttr(group.key)}">
-      <div class="gallery-folder__header">
-        <button class="gallery-folder__header-main" type="button" data-folder-toggle>
-          <div>
-            <p class="eyebrow">Folder</p>
-            <h3>
-              ${escapeHtml(group.label)}
-              ${isHiddenFolder ? `<span class="folder-badge-hidden">Hidden</span>` : ""}
-            </h3>
-            <p class="gallery-folder__meta">${group.items.length} elemente foto & video</p>
-          </div>
-        </button>
-        <div class="gallery-folder__header-actions">
-          ${
-            canDeleteFolder
-              ? `<button type="button" class="folder-delete-btn" data-action="delete-folder" title="Șterge folder"><i class="bi bi-trash-fill"></i></button>`
-              : ""
-          }
-          <button type="button" class="gallery-folder__chevron" data-folder-toggle aria-label="Deschide folder"><i class="bi bi-chevron-down"></i></button>
-        </div>
-      </div>
-      <div class="gallery-folder__body">
-        ${
-          isOpen
-            ? `<div class="gallery-grid--folder">${visibleItems
-                .map((item, index) => galleryCard(item, index, group.items.length))
-                .join("")}</div>`
-            : ""
-        }
-        ${
-          isOpen && remaining > 0
-            ? `<div class="gallery-folder__more" style="margin-top:1.25rem; text-align:center;">
-                <button class="chip chip--soft" type="button" data-folder-more>Încarcă mai multe (${remaining})</button>
-               </div>`
-            : ""
-        }
-      </div>
-    </section>
-  `;
 }
 
 function galleryCard(item, index, totalInGroup) {
@@ -841,50 +1269,637 @@ function galleryCard(item, index, totalInGroup) {
         <h3>${escapeHtml(item.title || "Fără titlu")}</h3>
         <p class="gallery-card__meta">${escapeHtml(item.description || "")}</p>
       </div>
-      <div class="gallery-card__actions">
-        ${
-          state.isEditMode && item.isCustom
-            ? `<button class="mini-btn mini-btn--danger" type="button" data-action="delete"><i class="bi bi-trash-fill"></i> Șterge</button>`
-            : `<button class="mini-btn mini-btn--accent" type="button" data-action="view"><i class="bi bi-eye"></i> Vezi</button>`
-        }
+      <div class="gallery-card__actions" style="display:flex; justify-content:space-between; align-items:center;">
+        <div>
+          ${
+            item.isCustom
+              ? `<button class="mini-btn mini-btn--edit" type="button" data-action="edit" title="Editează detalii"><i class="bi bi-pencil-square"></i> Editează</button>`
+              : ""
+          }
+        </div>
+        <div>
+          ${
+            state.isEditMode && item.isCustom
+              ? `<button class="mini-btn mini-btn--danger" type="button" data-action="delete"><i class="bi bi-trash-fill"></i> Șterge</button>`
+              : `<button class="mini-btn mini-btn--accent" type="button" data-action="view"><i class="bi bi-eye"></i> Vezi</button>`
+          }
+        </div>
       </div>
     </article>
   `;
 }
 
-function bindFolderEvents() {
-  if (!els.galleryGrid) return;
+  function bindFolderEvents() {
+    if (!els.galleryGrid) return;
 
-  els.galleryGrid.querySelectorAll("[data-folder-key]").forEach((section) => {
-    const key = section.dataset.folderKey;
-    const toggles = section.querySelectorAll("[data-folder-toggle]");
-    const deleteBtn = section.querySelector("[data-action='delete-folder']");
-    const more = section.querySelector("[data-folder-more]");
+    els.galleryGrid
+        .querySelectorAll("[data-action='delete-folder']")
+        .forEach((button) => {
 
-    toggles.forEach((toggle) => {
-      toggle.addEventListener("click", () => {
-        if (state.openFolders.has(key)) {
-          state.openFolders.delete(key);
-        } else {
-          state.openFolders.add(key);
-        }
-        render();
-      });
+          button.addEventListener("click", (event) => {
+            event.stopPropagation();
+
+            const key =
+                button.dataset.directoryDelete;
+
+            if (key) {
+              deleteUserFolder(key);
+            }
+          });
+        });
+
+
+    els.galleryGrid
+        .querySelectorAll("[data-action='add-to-folder']")
+        .forEach((button) => {
+
+          button.addEventListener("click", (event) => {
+            event.stopPropagation();
+
+            openImportModal();
+
+            if (els.importFolderSelect) {
+              els.importFolderSelect.value =
+                  button.dataset.folderTarget || "amintiri";
+            }
+          });
+        });
+  }
+  function calculateFolderStats(folder) {
+    let photos = 0;
+    let videos = 0;
+
+    folder.items.forEach((item) => {
+      if (item.kind === "video") {
+        videos += 1;
+      } else {
+        photos += 1;
+      }
     });
 
-    deleteBtn?.addEventListener("click", (event) => {
-      event.stopPropagation();
-      deleteUserFolder(key);
+    folder.children.forEach((child) => {
+      const stats = calculateFolderStats(child);
+
+      photos += stats.photos;
+      videos += stats.videos;
     });
 
-    more?.addEventListener("click", () => {
-      const current = state.folderLimits.get(key) || DEFAULT_PAGE_SIZE;
-      state.folderLimits.set(key, current + DEFAULT_PAGE_SIZE);
-      render();
-    });
-  });
-}
+    folder.totalPhotos = photos;
+    folder.totalVideos = videos;
+    folder.totalMedia = photos + videos;
 
+    return {
+      photos,
+      videos,
+      total: photos + videos
+    };
+  }
+  function findFolderNode(root, key) {
+    if (!key) {
+      return root;
+    }
+
+    for (const folder of root.children.values()) {
+      if (folder.key === key) {
+        return folder;
+      }
+
+      const found = findFolderNode(folder, key);
+
+      if (found) {
+        return found;
+      }
+    }
+
+    return null;
+  }
+  function getParentFolderKey(key) {
+    if (!key || !isUserFolder(key)) {
+      return null;
+    }
+
+    const clean = key
+        .replace(/^custom:/, "")
+        .replaceAll("\\", "/");
+
+    const parts = clean
+        .split("/")
+        .filter(Boolean);
+
+    if (parts.length <= 1) {
+      return null;
+    }
+
+    parts.pop();
+
+    return `custom:${parts.join("/")}`;
+  }
+  function renderDirectoryCard(folder) {
+    const stats = {
+      photos: folder.totalPhotos || 0,
+      videos: folder.totalVideos || 0
+    };
+
+    let countText = "";
+
+    if (stats.photos > 0 && stats.videos > 0) {
+      countText = `${stats.photos} fotografii · ${stats.videos} videoclipuri`;
+    } else if (stats.photos > 0) {
+      countText = `${stats.photos} fotografii`;
+    } else if (stats.videos > 0) {
+      countText = `${stats.videos} videoclipuri`;
+    } else if (folder.children.size > 0) {
+      countText = `${folder.children.size} subfoldere`;
+    } else {
+      countText = "Folder gol";
+    }
+
+    return `
+    <div
+      class="gallery-directory-card-wrapper"
+      data-directory-wrapper="${escapeAttr(folder.key)}"
+    >
+
+      <button
+        type="button"
+        class="gallery-directory-card"
+        data-directory-open="${escapeAttr(folder.key)}"
+      >
+
+        <div class="gallery-directory-card__icon">
+          <i class="bi bi-folder-fill"></i>
+        </div>
+
+        <div class="gallery-directory-card__info">
+
+          <strong>
+            ${escapeHtml(folder.label)}
+          </strong>
+
+          <span>
+            ${escapeHtml(countText)}
+          </span>
+
+        </div>
+
+        <i class="bi bi-chevron-right"></i>
+
+      </button>
+
+      ${
+        state.isEditMode && isUserFolder(folder.key)
+            ? `
+            <button
+              type="button"
+              class="folder-delete-btn gallery-directory-card__delete"
+              data-action="delete-folder"
+              data-directory-delete="${escapeAttr(folder.key)}"
+              title="Șterge folder"
+            >
+              <i class="bi bi-trash-fill"></i>
+            </button>
+          `
+            : ""
+    }
+
+    </div>
+  `;
+  }
+  function renderCurrentFolderMedia(folder) {
+    if (!folder || folder.items.length === 0) {
+      return "";
+    }
+
+    const limit =
+        state.folderLimits.get(folder.key) ||
+        DEFAULT_PAGE_SIZE;
+
+    const visibleItems =
+        folder.items.slice(0, limit);
+
+    const remaining =
+        folder.items.length - visibleItems.length;
+
+    return `
+    <div class="gallery-grid--folder">
+
+      ${visibleItems
+        .map((item, index) =>
+            galleryCard(
+                item,
+                index,
+                folder.items.length
+            )
+        )
+        .join("")}
+
+    </div>
+
+    ${
+        remaining > 0
+            ? `
+          <div
+            class="gallery-folder__more"
+            style="margin-top:1.25rem;text-align:center;"
+          >
+            <button
+              class="chip chip--soft"
+              type="button"
+              data-folder-more
+              data-folder-more-key="${escapeAttr(folder.key)}"
+            >
+              Încarcă mai multe (${remaining})
+            </button>
+          </div>
+        `
+            : ""
+    }
+  `;
+  }
+  function renderRootDirectoryCard(folder) {
+    const photos = folder.totalPhotos || 0;
+    const videos = folder.totalVideos || 0;
+
+    const parts = [];
+
+    if (photos > 0) {
+      parts.push(`${photos} fotografii`);
+    }
+
+    if (videos > 0) {
+      parts.push(`${videos} videoclipuri`);
+    }
+
+    if (folder.children.size > 0) {
+      parts.push(
+          `${folder.children.size} ${
+              folder.children.size === 1
+                  ? "subfolder"
+                  : "subfoldere"
+          }`
+      );
+    }
+
+    const statsText =
+        parts.length > 0
+            ? parts.join(" · ")
+            : "Folder gol";
+
+    return `
+    <div
+      class="gallery-root-directory-wrapper"
+      data-directory-wrapper="${escapeAttr(folder.key)}"
+    >
+      <button
+        type="button"
+        class="gallery-root-directory"
+        data-directory-open="${escapeAttr(folder.key)}"
+      >
+        <div class="gallery-root-directory__icon">
+          <i class="bi bi-folder-fill"></i>
+        </div>
+
+        <div class="gallery-root-directory__info">
+          <strong>${escapeHtml(folder.label)}</strong>
+
+          <span>
+            ${escapeHtml(statsText)}
+          </span>
+        </div>
+
+        <div class="gallery-root-directory__arrow">
+          <i class="bi bi-chevron-right"></i>
+        </div>
+      </button>
+
+      ${
+        state.isEditMode && isUserFolder(folder.key)
+            ? `
+            <button
+              type="button"
+              class="folder-delete-btn gallery-root-directory__delete"
+              data-action="delete-folder"
+              data-directory-delete="${escapeAttr(folder.key)}"
+              title="Șterge folder"
+            >
+              <i class="bi bi-trash-fill"></i>
+            </button>
+          `
+            : ""
+    }
+    </div>
+  `;
+  }
+  function renderClosedRootFolder(folder) {
+    const photos = folder.totalPhotos || 0;
+    const videos = folder.totalVideos || 0;
+
+    let stats = "";
+
+    if (photos > 0 && videos > 0) {
+      stats = `${photos} fotografii · ${videos} videoclipuri`;
+    } else if (photos > 0) {
+      stats = `${photos} fotografii`;
+    } else if (videos > 0) {
+      stats = `${videos} videoclipuri`;
+    } else if (folder.children.size > 0) {
+      stats = `${folder.children.size} subfoldere`;
+    }
+
+    return `
+    <section
+      class="gallery-folder"
+      data-folder-key="${escapeAttr(folder.key)}"
+    >
+
+      <div class="gallery-folder__header">
+
+        <button
+          class="gallery-folder__header-main"
+          type="button"
+          data-directory-open="${escapeAttr(folder.key)}"
+        >
+          <div>
+
+            <p class="eyebrow">Folder</p>
+
+            <h3>
+              ${escapeHtml(folder.label)}
+            </h3>
+
+            ${
+        stats
+            ? `
+                  <p class="gallery-folder__meta">
+                    ${escapeHtml(stats)}
+                  </p>
+                `
+            : ""
+    }
+
+          </div>
+        </button>
+
+        <div class="gallery-folder__header-actions">
+
+          ${
+        state.isEditMode && isUserFolder(folder.key)
+            ? `
+                <button
+                  type="button"
+                  class="folder-delete-btn"
+                  data-action="delete-folder"
+                  data-directory-delete="${escapeAttr(folder.key)}"
+                  title="Șterge folder"
+                >
+                  <i class="bi bi-trash-fill"></i>
+                </button>
+              `
+            : ""
+    }
+
+          <button
+            type="button"
+            class="gallery-folder__chevron"
+            data-directory-open="${escapeAttr(folder.key)}"
+            aria-label="Deschide folder"
+          >
+            <i class="bi bi-chevron-right"></i>
+          </button>
+
+        </div>
+
+      </div>
+
+    </section>
+  `;
+  }
+  function renderSubfolderCard(folder) {
+    const photos = folder.totalPhotos || 0;
+    const videos = folder.totalVideos || 0;
+
+    let stats = "";
+
+    if (photos > 0 && videos > 0) {
+      stats =
+          `${photos} fotografii · ${videos} videoclipuri`;
+    } else if (photos > 0) {
+      stats =
+          `${photos} fotografii`;
+    } else if (videos > 0) {
+      stats =
+          `${videos} videoclipuri`;
+    } else if (folder.children.size > 0) {
+      stats =
+          `${folder.children.size} subfoldere`;
+    }
+
+    return `
+    <button
+      type="button"
+      class="gallery-subfolder-card"
+      data-directory-open="${escapeAttr(folder.key)}"
+    >
+
+      <div class="gallery-subfolder-card__icon">
+        <i class="bi bi-folder-fill"></i>
+      </div>
+
+      <div class="gallery-subfolder-card__info">
+
+        <strong>
+          ${escapeHtml(folder.label)}
+        </strong>
+
+        ${
+        stats
+            ? `
+              <span>
+                ${escapeHtml(stats)}
+              </span>
+            `
+            : ""
+    }
+
+      </div>
+
+      <i class="bi bi-chevron-right"></i>
+
+    </button>
+  `;
+  }
+  function renderOpenFolder(folder) {
+    const children = Array.from(folder.children.values());
+
+    const limit =
+        state.folderLimits.get(folder.key) ||
+        DEFAULT_PAGE_SIZE;
+
+    const visibleItems =
+        folder.items.slice(0, limit);
+
+    const remaining =
+        folder.items.length - visibleItems.length;
+
+    return `
+    <section
+      class="gallery-folder is-open"
+      data-folder-key="${escapeAttr(folder.key)}"
+    >
+
+      <div class="gallery-folder__header">
+
+        <button
+          class="gallery-folder__header-main"
+          type="button"
+        >
+          <div>
+
+            <p class="eyebrow">Folder</p>
+
+            <h3>
+              ${escapeHtml(folder.label)}
+            </h3>
+
+            ${
+        folder.totalPhotos > 0 ||
+        folder.totalVideos > 0
+            ? `
+                  <p class="gallery-folder__meta">
+                    ${
+                folder.totalPhotos > 0 &&
+                folder.totalVideos > 0
+                    ? `${folder.totalPhotos} fotografii · ${folder.totalVideos} videoclipuri`
+                    : folder.totalPhotos > 0
+                        ? `${folder.totalPhotos} fotografii`
+                        : `${folder.totalVideos} videoclipuri`
+            }
+                  </p>
+                `
+            : ""
+    }
+
+          </div>
+        </button>
+
+      </div>
+
+
+      <div class="gallery-folder__body">
+
+        ${
+        children.length > 0
+            ? `
+              <div class="gallery-subfolders">
+
+                ${children
+                .map((child) => {
+                  calculateFolderStats(child);
+                  return renderSubfolderCard(child);
+                })
+                .join("")}
+
+              </div>
+            `
+            : ""
+    }
+
+
+        ${
+        visibleItems.length > 0
+            ? `
+              <div class="gallery-grid--folder">
+
+                ${visibleItems
+                .map((item, index) =>
+                    galleryCard(
+                        item,
+                        index,
+                        folder.items.length
+                    )
+                )
+                .join("")}
+
+              </div>
+            `
+            : ""
+    }
+
+
+        ${
+        remaining > 0
+            ? `
+              <div
+                class="gallery-folder__more"
+                style="
+                  margin-top:1.25rem;
+                  text-align:center;
+                "
+              >
+                <button
+                  class="chip chip--soft"
+                  type="button"
+                  data-folder-more
+                  data-folder-more-key="${escapeAttr(folder.key)}"
+                >
+                  Încarcă mai multe (${remaining})
+                </button>
+              </div>
+            `
+            : ""
+    }
+
+      </div>
+
+    </section>
+  `;
+  }
+  function renderDirectory(tree) {
+    const currentFolder = findFolderNode(
+        tree,
+        state.currentFolder
+    );
+
+    const isRoot = !state.currentFolder;
+
+    // La root afișăm toate folderele principale.
+    if (isRoot) {
+      const folders = Array.from(tree.children.values());
+
+      return folders
+          .map((folder) => {
+            calculateFolderStats(folder);
+            return renderClosedRootFolder(folder);
+          })
+          .join("");
+    }
+
+    // Când suntem într-un folder, afișăm DOAR folderul respectiv.
+    if (!currentFolder) {
+      state.currentFolder = null;
+      return renderDirectory(tree);
+    }
+
+    calculateFolderStats(currentFolder);
+
+    return `
+    <div class="gallery-directory-view">
+
+      <button
+        type="button"
+        class="gallery-directory-back"
+        data-directory-back
+        aria-label="Înapoi"
+        title="Înapoi"
+      >
+        <i class="bi bi-arrow-left"></i>
+      </button>
+
+      ${renderOpenFolder(currentFolder)}
+
+    </div>
+  `;
+  }
 async function deleteUserFolder(key) {
   if (!isUserFolder(key)) {
     showToast("Doar folderele create de tine pot fi șterse.");
@@ -902,6 +1917,7 @@ async function deleteUserFolder(key) {
   state.openFolders.delete(key);
   state.folderLimits.delete(key);
   saveUserFolders(state.userFolders);
+  populateFolderDropdown();
   persistOrder();
   render();
   showToast(`Folderul „${label}" a fost șters.`);
@@ -999,6 +2015,8 @@ function bindCardEvents() {
         toggleFavorite(item.id);
       } else if (action === "view") {
         openPreview(item);
+      } else if (action === "edit") {
+        openEditMediaModal(item);
       } else if (action === "delete") {
         if (!item.isCustom) {
           showToast("Doar fotografiile adăugate de tine pot fi șterse.");
@@ -1031,9 +2049,18 @@ function openPreview(item) {
           ${meta}
           ${item.folder ? `<span class="tag"><i class="bi bi-folder-fill"></i> ${escapeHtml(folderLabel(item.folder))}</span>` : ""}
         </div>
-        <button class="mini-btn ${isFav ? "mini-btn--rose" : "mini-btn--ghost"}" type="button" id="btnPreviewFav" title="${isFav ? "Elimină din favorite" : "Adaugă la favorite"}">
-          <i class="bi ${isFav ? "bi-heart-fill" : "bi-heart"}"></i> ${isFav ? "Favorit" : "Favorite"}
-        </button>
+        <div style="display:flex; gap:0.5rem; align-items:center;">
+          ${
+            item.isCustom
+              ? `<button class="mini-btn mini-btn--edit" type="button" id="btnPreviewEdit" title="Editează detalii">
+                  <i class="bi bi-pencil-square"></i> Editează
+                </button>`
+              : ""
+          }
+          <button class="mini-btn ${isFav ? "mini-btn--rose" : "mini-btn--ghost"}" type="button" id="btnPreviewFav" title="${isFav ? "Elimină din favorite" : "Adaugă la favorite"}">
+            <i class="bi ${isFav ? "bi-heart-fill" : "bi-heart"}"></i> ${isFav ? "Favorit" : "Favorite"}
+          </button>
+        </div>
       </div>
       <h2 style="margin:0.75rem 0 0.4rem;font-family:var(--font-photo);font-size:2.2rem;">${escapeHtml(item.title || "")}</h2>
       <p class="muted" style="line-height:1.6;">${escapeHtml(item.description || "Fără descriere")}</p>
@@ -1051,6 +2078,15 @@ function openPreview(item) {
   document.getElementById("btnPreviewFav")?.addEventListener("click", () => {
     toggleFavorite(item.id);
     openPreview(item);
+  });
+
+  document.getElementById("btnPreviewEdit")?.addEventListener("click", () => {
+    if (typeof els.mediaModal.close === "function") {
+      els.mediaModal.close();
+    } else {
+      els.mediaModal.style.display = "none";
+    }
+    openEditMediaModal(item);
   });
 
   if (typeof els.mediaModal.showModal === "function") {
@@ -1228,4 +2264,5 @@ function closeSlideshow() {
     }
   }
 }
+
 })();

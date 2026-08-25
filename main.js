@@ -1,12 +1,40 @@
+//main.js
 const { app, BrowserWindow, Menu, globalShortcut, ipcMain, dialog, shell, Notification } = require("electron");
 const fs = require("fs/promises");
 const path = require("path");
 const { pathToFileURL } = require("url");
 const { autoUpdater } = require("electron-updater");
 
+
 let win;
 let updater;
 let pendingMusicPath = null;
+function reportAppError(error, source = "Main Process") {
+    console.error(`[${source}]`, error);
+
+    const message =
+        error instanceof Error
+            ? error.message
+            : String(error);
+
+    const stack =
+        error instanceof Error && error.stack
+            ? error.stack
+            : "";
+
+    win?.webContents.send("app:error", {
+        source,
+        message,
+        stack
+    });
+}
+process.on("uncaughtException", (error) => {
+    reportAppError(error, "Main Process");
+});
+
+process.on("unhandledRejection", (reason) => {
+    reportAppError(reason, "Unhandled Promise");
+});
 const AUDIO_EXTENSIONS = new Set([".mp3", ".wav", ".ogg"]);
 const DEFAULT_SHORTCUTS = { fullscreen: "F11", home: "F1", gallery: "F2", anniversaries: "F3", map: "F4", myplan: "F5", appearance: "F12", add: "Alt+A", easterEgg: "Alt+F1" };
 let shortcuts = { ...DEFAULT_SHORTCUTS };
@@ -356,7 +384,12 @@ async function ensureLibrary() {
 async function readLibrary() {
     const paths = await ensureLibrary();
     const items = JSON.parse(await fs.readFile(paths.metadata, "utf8"));
-    return items.map((item) => ({ ...item, src: pathToFileURL(path.join(paths.media, item.fileName)).href }));
+    return items.map((item) => {
+        if (item.filePath) {
+            return { ...item, src: pathToFileURL(item.filePath).href };
+        }
+        return { ...item, src: pathToFileURL(path.join(paths.media, item.fileName)).href };
+    });
 }
 
 app.whenReady().then(async () => {
@@ -372,6 +405,223 @@ app.whenReady().then(async () => {
         const paths = await ensureLibrary();
         await fs.writeFile(paths.galleryState, JSON.stringify({ order: state.order || [] }, null, 2), "utf8");
         return true;
+    });
+    ipcMain.handle("media-library:choose-folder", async () => {
+        const selected = await dialog.showOpenDialog(win, {
+            title: "Setează un folder din PC ca folder",
+            properties: ["openDirectory"],
+        });
+
+        if (selected.canceled || !selected.filePaths[0]) {
+            return { canceled: true };
+        }
+
+        const dirPath = selected.filePaths[0];
+
+        // Pentru F:\, C:\ etc.
+        let folderName = path.basename(path.resolve(dirPath));
+
+        if (!folderName) {
+            folderName = path.parse(path.resolve(dirPath)).root
+                .replace(/[\\/:]/g, "");
+        }
+
+        if (!folderName) {
+            folderName = "Folder PC";
+        }
+
+        const imageExtensions = new Set([
+            ".jpg",
+            ".jpeg",
+            ".png",
+            ".webp",
+            ".gif",
+            ".bmp",
+            ".svg",
+            ".heic"
+        ]);
+
+        const videoExtensions = new Set([
+            ".mp4",
+            ".mov",
+            ".mkv",
+            ".avi",
+            ".webm"
+        ]);
+
+        const items = [];
+        const folders = [];
+
+        // Folder-e protejate Windows / disc
+        const ignoredFolders = new Set([
+            "$RECYCLE.BIN",
+            "System Volume Information",
+            "Windows",
+            "Program Files",
+            "Program Files (x86)",
+            "AppData"
+        ]);
+
+        async function readFolderTree(currentPath, relativePath = "") {
+            let dirents;
+
+            try {
+                dirents = await fs.readdir(currentPath, {
+                    withFileTypes: true
+                });
+            } catch (error) {
+                console.warn("Folder ignorat:", currentPath, error.message);
+                return;
+            }
+
+            const folderKey = relativePath
+                ? `custom:${folderName}/${relativePath.replaceAll("\\", "/")}`
+                : `custom:${folderName}`;
+
+            // IMPORTANT:
+            // folderul există chiar dacă este gol
+            folders.push(folderKey);
+
+            for (const dirent of dirents) {
+                if (dirent.isDirectory()) {
+                    if (
+                        dirent.name === "$RECYCLE.BIN" ||
+                        dirent.name === "System Volume Information"
+                    ) {
+                        continue;
+                    }
+
+                    const nextRelativePath = relativePath
+                        ? path.join(relativePath, dirent.name)
+                        : dirent.name;
+
+                    await readFolderTree(
+                        path.join(currentPath, dirent.name),
+                        nextRelativePath
+                    );
+
+                    continue;
+                }
+
+                if (!dirent.isFile()) continue;
+
+                const ext = path.extname(dirent.name).toLowerCase();
+
+                const isImage = imageExtensions.has(ext);
+                const isVideo = videoExtensions.has(ext);
+
+                if (!isImage && !isVideo) continue;
+
+                const fullPath = path.join(
+                    currentPath,
+                    dirent.name
+                );
+
+                const stat = await fs.stat(fullPath).catch(() => null);
+                if (!stat) continue;
+
+                items.push({
+                    id: `pc_${Date.now()}_${Math.random()
+                        .toString(36)
+                        .slice(2, 9)}`,
+
+                    kind: isVideo ? "video" : "image",
+
+                    title: path.parse(dirent.name).name,
+                    description: "",
+                    location: "",
+
+                    // AICI este cheia.
+                    folder: folderKey,
+
+                    tag: relativePath
+                        ? path.basename(relativePath)
+                        : folderName,
+
+                    date: stat.mtime.toLocaleDateString(
+                        "ro-RO",
+                        {
+                            year: "numeric",
+                            month: "long",
+                            day: "numeric"
+                        }
+                    ),
+
+                    fileName: dirent.name,
+                    filePath: fullPath,
+                    src: pathToFileURL(fullPath).href,
+
+                    isCustom: true,
+                    isExternal: true
+                });
+            }
+        }
+
+        try {
+
+            console.log(
+                "Încep scanarea:",
+                dirPath
+            );
+
+            await readFolderTree(
+                dirPath,
+                ""
+            );
+
+            console.log(
+                `Scanare terminată: ${items.length} media`
+            );
+
+        } catch (error) {
+
+            console.error(
+                "Eroare la citirea folderului:",
+                error
+            );
+
+            throw new Error(
+                `Nu s-a putut citi folderul: ${error.message}`
+            );
+        }
+
+        return {
+            canceled: false,
+
+            dirPath,
+
+            folderName,
+
+            items,
+
+            count: items.length
+        };
+    });
+    ipcMain.handle("media-library:import-folder", async (_event, payload) => {
+        const paths = await ensureLibrary();
+        const incoming = Array.isArray(payload?.items) ? payload.items : [];
+        const items = JSON.parse(await fs.readFile(paths.metadata, "utf8"));
+        const incomingPaths = new Set(incoming.map((i) => i.filePath).filter(Boolean));
+        const filtered = items.filter((item) => !item.filePath || !incomingPaths.has(item.filePath));
+        const merged = [...incoming, ...filtered];
+        await fs.writeFile(paths.metadata, JSON.stringify(merged, null, 2), "utf8");
+        return { success: true, count: incoming.length };
+    });
+    ipcMain.handle("media-library:update-item", async (_event, payload) => {
+        const paths = await ensureLibrary();
+        const items = JSON.parse(await fs.readFile(paths.metadata, "utf8"));
+        const index = items.findIndex((item) => item.id === payload.id);
+        if (index === -1) return { success: false, error: "Elementul nu a fost găsit." };
+        items[index] = {
+            ...items[index],
+            title: payload.title !== undefined ? String(payload.title).trim() : items[index].title,
+            description: payload.description !== undefined ? String(payload.description).trim() : items[index].description,
+            location: payload.location !== undefined ? String(payload.location).trim() : items[index].location,
+            folder: payload.folder !== undefined ? payload.folder : items[index].folder,
+            tag: payload.folder !== undefined ? String(payload.folder).replace(/^custom:/, "") : items[index].tag,
+        };
+        await fs.writeFile(paths.metadata, JSON.stringify(items, null, 2), "utf8");
+        return { success: true, item: items[index] };
     });
     ipcMain.handle("media-library:import", async (_event, payload) => {
         const paths = await ensureLibrary();
@@ -390,7 +640,9 @@ app.whenReady().then(async () => {
         const items = JSON.parse(await fs.readFile(paths.metadata, "utf8"));
         const found = items.find((item) => item.id === id);
         const remaining = items.filter((item) => item.id !== id);
-        if (found) await fs.rm(path.join(paths.media, found.fileName), { force: true });
+        if (found && found.fileName && !found.isExternal) {
+            await fs.rm(path.join(paths.media, found.fileName), { force: true }).catch(() => {});
+        }
         await fs.writeFile(paths.metadata, JSON.stringify(remaining, null, 2), "utf8");
         return true;
     });
@@ -471,6 +723,12 @@ app.whenReady().then(async () => {
         try {
             const paths = await ensureLibrary();
             await scanDirectory(paths.media);
+            const metaItems = JSON.parse(await fs.readFile(paths.metadata, "utf8").catch(() => "[]"));
+            for (const item of metaItems) {
+                if (item.filePath) {
+                    await addFileToZip(item.filePath, path.basename(item.filePath));
+                }
+            }
         } catch { /* ignore if library missing */ }
 
         if (!entries.length) {

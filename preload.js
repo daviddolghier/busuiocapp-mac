@@ -3,6 +3,9 @@ const { contextBridge, ipcRenderer } = require("electron");
 contextBridge.exposeInMainWorld("mediaLibrary", {
   list: () => ipcRenderer.invoke("media-library:list"),
   import: (payload) => ipcRenderer.invoke("media-library:import", payload),
+  chooseFolder: () => ipcRenderer.invoke("media-library:choose-folder"),
+  importFolder: (payload) => ipcRenderer.invoke("media-library:import-folder", payload),
+  updateItem: (payload) => ipcRenderer.invoke("media-library:update-item", payload),
   remove: (id) => ipcRenderer.invoke("media-library:remove", id),
   getGalleryState: () => ipcRenderer.invoke("media-library:get-gallery-state"),
   saveGalleryState: (state) => ipcRenderer.invoke("media-library:save-gallery-state", state),
@@ -28,4 +31,7 @@ contextBridge.exposeInMainWorld("mediaLibrary", {
   onUpdateAvailable: (callback) => ipcRenderer.on("update:available", (_event, payload) => callback(payload)),
   onUpdateProgress: (callback) => ipcRenderer.on("update:progress", (_event, payload) => callback(payload)),
   onUpdateReady: (callback) => ipcRenderer.on("update:ready", () => callback()),
+  onAppError: (callback) => {
+    ipcRenderer.on("app:error", (_event, error) => callback(error));
+  },
 });

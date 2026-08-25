@@ -65,7 +65,10 @@
         <div class="gallery-toolbar">
           <div class="gallery-toolbar__group">
             <button type="button" class="btn btn--primary" id="btnImportPhoto">
-              <i class="bi bi-plus-lg"></i> Adaugă
+              <i class="bi bi-plus-lg"></i> Adaugă Media
+            </button>
+            <button type="button" class="btn btn--also-primary" id="btnCreateFolder">
+              <i class="bi bi-plus-lg"></i> Adaugă Folder
             </button>
             <button type="button" class="btn btn--secondary btn-favorite-filter" id="btnFavoriteFolder">
               <i class="bi bi-heart-fill" style="color: var(--rose);"></i> Favorite
@@ -168,6 +171,84 @@
       </div>
     </dialog>
 
+    <!-- Modal Adăugare Folder -->
+    <dialog class="modal" id="folderModal">
+      <div class="modal__surface modal__surface--compact">
+        <div class="modal__header">
+          <h2><i class="bi bi-folder-plus" style="color:var(--accent-light);"></i> Adaugă Folder</h2>
+          <button class="modal__close" id="btnCloseFolderModal" type="button" aria-label="Închide"><i class="bi bi-x-lg"></i></button>
+        </div>
+
+        <form id="folderForm">
+          <div class="form-group">
+            <label class="form-label" for="folderNameInput">Numele Folderului:</label>
+            <input type="text" id="folderNameInput" class="form-control" placeholder="Introdu numele folderului..." autocomplete="off" />
+          </div>
+
+          <div style="display:flex; justify-content:flex-end; margin-top:0.75rem;">
+            <button type="submit" class="btn btn--primary" id="btnSubmitNewFolder">
+              <i class="bi bi-plus-lg"></i> Creează Folder
+            </button>
+          </div>
+
+          <div class="modal-divider">
+            <span>SAU</span>
+          </div>
+
+          <div class="folder-pc-box">
+            <button type="button" class="btn btn--secondary btn-pc-folder" id="btnChoosePcFolder">
+              <i class="bi bi-folder2-open"></i> Setează un folder din PC ca folder
+            </button>
+            <p class="folder-pc-hint">
+              Selectează un folder din calculatorul tău. Fotografiile și videoclipurile din acea cale vor apărea automat în galerie.
+            </p>
+          </div>
+
+          <div style="display:flex; justify-content:flex-end; gap:0.75rem; margin-top:1.5rem; border-top:1px solid var(--surface-border); padding-top:1rem;">
+            <button type="button" class="btn btn--ghost" id="btnCancelFolderModal">Închide</button>
+          </div>
+        </form>
+      </div>
+    </dialog>
+
+    <!-- Modal Editare Detalii Media -->
+    <dialog class="modal" id="editMediaModal">
+      <div class="modal__surface">
+        <div class="modal__header">
+          <h2><i class="bi bi-pencil-square" style="color:var(--accent-light);"></i> Editează Media</h2>
+          <button class="modal__close" id="btnCloseEditMediaModal" type="button" aria-label="Închide"><i class="bi bi-x-lg"></i></button>
+        </div>
+
+        <form id="editMediaForm">
+          <input type="hidden" id="editMediaId" />
+          <div class="form-group">
+            <label class="form-label" for="editMediaTitle">Titlu</label>
+            <input type="text" id="editMediaTitle" class="form-control" placeholder="Titlul elementului..." required />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="editMediaDescription">Descriere</label>
+            <textarea id="editMediaDescription" class="form-control" placeholder="Descrierea amintirii..."></textarea>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="editMediaLocation">Locație</label>
+            <input type="text" id="editMediaLocation" class="form-control" placeholder="De ex. Ialoveni, Chișinău, Paris" />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="editMediaFolderSelect">Folder</label>
+            <select id="editMediaFolderSelect" class="form-control"></select>
+          </div>
+
+          <div style="display:flex; justify-content:flex-end; gap:0.75rem; margin-top:1.5rem;">
+            <button type="button" class="btn btn--ghost" id="btnCancelEditMedia">Anulează</button>
+            <button type="submit" class="btn btn--primary" id="btnSaveEditMedia"><i class="bi bi-check-lg"></i> Salvează modificările</button>
+          </div>
+        </form>
+      </div>
+    </dialog>
+
     <!-- Preview Modal -->
     <dialog class="modal" id="mediaModal">
       <form method="dialog" class="modal__surface">
@@ -226,5 +307,6 @@
     <script src="shortcuts.js"></script>
     <script src="gallery.js"></script>
     <script src="theme.js"></script><script src="features.js"></script>
+    <script src="../error-handler.js"></script>
   </body>
 </html>

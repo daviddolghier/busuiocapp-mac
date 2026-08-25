@@ -1,6 +1,6 @@
 {
   "name": "Busuioc-App",
-  "version": "1.0.20",
+  "version": "1.0.21",
   "description": "Busuioc App desktop application",
   "author": "David Dolghier",
   "main": "main.js",
